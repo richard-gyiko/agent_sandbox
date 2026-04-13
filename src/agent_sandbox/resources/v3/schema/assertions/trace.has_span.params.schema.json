@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://whizy.dev/labs/v3/assertions/trace.has_span.params.schema.json",
+  "type": "object",
+  "required": ["span_name"],
+  "properties": {
+    "span_name": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "min_count": { "type": "integer", "minimum": 1 },
+    "timeout_s": { "type": "number", "minimum": 0 }
+  },
+  "additionalProperties": false
+}

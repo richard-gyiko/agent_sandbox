@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://whizy.dev/labs/v3/environment.schema.json",
+  "type": "object",
+  "required": ["version", "kind", "meta"],
+  "properties": {
+    "version": { "type": "integer", "const": 3 },
+    "kind": { "type": "string", "const": "environment" },
+    "meta": { "$ref": "shared.schema.json#/$defs/meta" },
+    "twins": {
+      "type": "object",
+      "properties": {
+        "gmail_base_url": { "type": "string", "minLength": 1 },
+        "drive_base_url": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "env": { "$ref": "shared.schema.json#/$defs/env_map" }
+      },
+      "additionalProperties": true
+    },
+    "plugins": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-zA-Z0-9_.]+$" }
+    },
+    "plugins_policy": {
+      "type": "object",
+      "properties": {
+        "allowlist": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-zA-Z0-9_.]+$" }
+        },
+        "unsafe": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

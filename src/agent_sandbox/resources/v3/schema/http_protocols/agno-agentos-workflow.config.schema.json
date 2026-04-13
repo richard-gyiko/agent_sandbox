@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://whizy.dev/labs/v3/http_protocols/agno-agentos-workflow.config.schema.json",
+  "type": "object",
+  "required": ["url"],
+  "properties": {
+    "url": { "type": "string", "minLength": 1 },
+    "method": { "type": "string", "enum": ["POST", "PUT"] },
+    "headers": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "protocol": { "type": "string", "const": "agno-agentos-workflow" },
+    "message": { "type": "string", "minLength": 1 },
+    "form_fields": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [{ "type": "string" }, { "type": "number" }, { "type": "boolean" }]
+      }
+    }
+  },
+  "additionalProperties": true
+}

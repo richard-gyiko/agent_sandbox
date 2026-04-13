@@ -1,0 +1,14 @@
+{
+  "schema_version": "lab.adapter.v1",
+  "status": "COMPLETED",
+  "result": {
+    "content": "python-adapter completed run=run_fixture_1 target=workflow.external.sample",
+    "input_text": "Run adapter fixture."
+  },
+  "metrics": {
+    "adapter": "python-http-adapter",
+    "run_id": "run_fixture_1"
+  },
+  "artifacts": [],
+  "error": null
+}

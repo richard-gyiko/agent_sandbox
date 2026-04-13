@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://whizy.dev/labs/v3/assertions/drive.file_exists.params.schema.json",
+  "type": "object",
+  "required": ["parent_path", "name"],
+  "properties": {
+    "parent_path": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

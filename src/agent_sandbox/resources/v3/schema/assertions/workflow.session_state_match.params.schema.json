@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://whizy.dev/labs/v3/assertions/workflow.session_state_match.params.schema.json",
+  "type": "object",
+  "required": ["values"],
+  "properties": {
+    "values": { "type": "object" }
+  },
+  "additionalProperties": false
+}

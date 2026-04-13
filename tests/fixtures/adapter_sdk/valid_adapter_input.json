@@ -1,0 +1,23 @@
+{
+  "schema_version": "lab.adapter.v1",
+  "run": {
+    "id": "run_fixture_1",
+    "mode": "workflow",
+    "target": "workflow.external.sample"
+  },
+  "scenario": {
+    "id": "scenario_fixture_1",
+    "name": "Adapter Fixture Scenario"
+  },
+  "runtime": {
+    "env": {
+      "WHIZY_RUNTIME_MODE": "twin",
+      "WHIZY_TWIN_GMAIL_BASE_URL": "http://localhost:9200",
+      "WHIZY_TWIN_DRIVE_BASE_URL": "http://localhost:9100"
+    },
+    "session_state": {}
+  },
+  "input": {
+    "text": "Run adapter fixture."
+  }
+}

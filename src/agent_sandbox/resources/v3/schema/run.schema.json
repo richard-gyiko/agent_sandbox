@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://whizy.dev/labs/v3/run.schema.json",
+  "type": "object",
+  "required": ["version", "kind", "meta", "environment_ref", "scenario_ref", "execution"],
+  "properties": {
+    "version": { "type": "integer", "const": 3 },
+    "kind": { "type": "string", "const": "run" },
+    "meta": { "$ref": "shared.schema.json#/$defs/meta" },
+    "environment_ref": { "type": "string", "minLength": 1 },
+    "scenario_ref": { "type": "string", "minLength": 1 },
+    "execution": {
+      "type": "object",
+      "required": ["mode"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["workflow", "agent"] },
+        "isolation": { "type": "string", "enum": ["sandbox_only", "allow_live"] },
+        "target": {
+          "type": "string",
+          "pattern": "^(workflow|agent)\\.[a-zA-Z0-9._-]+$"
+        },
+        "agent_id": { "type": "string", "minLength": 1 },
+        "session_state": { "type": "object" },
+        "adapter": {
+          "type": "object",
+          "required": ["type", "config"],
+          "properties": {
+            "type": { "type": "string", "enum": ["command", "http"] },
+            "timeout_s": { "type": "number", "minimum": 0 },
+            "retries": { "type": "integer", "minimum": 0 },
+            "strict_contract": { "type": "boolean" },
+            "config": { "type": "object" }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "type": { "const": "command" } }, "required": ["type"] },
+              "then": {
+                "properties": {
+                  "config": {
+                    "type": "object",
+                    "required": ["cmd"],
+                    "properties": {
+                      "cmd": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": { "type": "string", "minLength": 1 }
+                      },
+                      "cwd": { "type": "string", "minLength": 1 },
+                      "pass_env": { "type": "boolean" }
+                    },
+                    "additionalProperties": true
+                  }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "type": { "const": "http" } }, "required": ["type"] },
+              "then": {
+                "properties": {
+                  "config": {
+                    "type": "object",
+                    "required": ["url"],
+                    "properties": {
+                      "url": { "type": "string", "format": "uri", "minLength": 1 },
+                      "method": { "type": "string", "enum": ["POST", "PUT"] },
+                      "headers": {
+                        "type": "object",
+                        "additionalProperties": { "type": "string" }
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "env": { "$ref": "shared.schema.json#/$defs/env_map" }
+      },
+      "additionalProperties": true
+    },
+    "assertions": {
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string", "enum": ["strict", "soft"] }
+      },
+      "additionalProperties": false
+    },
+    "plugins": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-zA-Z0-9_.]+$" }
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "execution": {
+            "properties": { "mode": { "const": "agent" } },
+            "required": ["mode"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "execution": { "required": ["agent_id"] }
+        }
+      }
+    }
+  ]
+}

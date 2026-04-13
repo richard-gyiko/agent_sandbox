@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://whizy.dev/labs/v3/scenario.schema.json",
+  "type": "object",
+  "required": ["version", "kind", "meta", "seed", "expect"],
+  "properties": {
+    "version": { "type": "integer", "const": 3 },
+    "kind": { "type": "string", "const": "scenario" },
+    "meta": { "$ref": "shared.schema.json#/$defs/meta" },
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "clock": {
+          "type": "object",
+          "properties": {
+            "fixed_now": { "type": "string" }
+          },
+          "additionalProperties": true
+        },
+        "random": {
+          "type": "object",
+          "properties": {
+            "seed": { "oneOf": [{ "type": "integer" }, { "type": "string", "minLength": 1 }] }
+          },
+          "additionalProperties": false
+        },
+        "faults": {
+          "type": "object",
+          "properties": {
+            "preset": {
+              "type": "string",
+              "enum": ["none", "timeout", "transient_error", "permanent_error"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "env": { "$ref": "shared.schema.json#/$defs/env_map" }
+      },
+      "additionalProperties": true
+    },
+    "seed": {
+      "type": "object",
+      "properties": {
+        "refs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "gmail": { "type": "object" },
+        "drive": { "type": "object" }
+      },
+      "required": ["gmail", "drive"],
+      "additionalProperties": false
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+          "kind": { "type": "string" },
+          "params": { "type": "object" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "expect": {
+      "type": "object",
+      "required": ["assertions"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["strict", "soft"]
+        },
+        "assertions": {
+          "type": "array",
+          "items": { "$ref": "shared.schema.json#/$defs/assertion" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "run": {
+      "type": "object",
+      "properties": {
+        "target": { "type": "string", "pattern": "^[a-zA-Z0-9._-]+$" },
+        "agent_id": { "type": "string", "minLength": 1 },
+        "session_state": { "type": "object" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

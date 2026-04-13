@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://whizy.dev/labs/v3/assertions/workflow.metric_equals.params.schema.json",
+  "type": "object",
+  "required": ["key", "value"],
+  "properties": {
+    "key": { "type": "string", "minLength": 1 },
+    "value": {}
+  },
+  "additionalProperties": false
+}

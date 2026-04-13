@@ -1,0 +1,19 @@
+{
+  "schema_version": "lab.adapter.v0",
+  "run": {
+    "id": "adapter_contract_smoke",
+    "mode": "workflow",
+    "target": "workflow.external.sample"
+  },
+  "scenario": {
+    "id": "scenario_fixture_invalid",
+    "name": "Invalid Schema Fixture"
+  },
+  "runtime": {
+    "env": {},
+    "session_state": {}
+  },
+  "input": {
+    "text": "Run adapter fixture."
+  }
+}
