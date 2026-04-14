@@ -11,9 +11,9 @@
   },
   "runtime": {
     "env": {
-      "WHIZY_RUNTIME_MODE": "twin",
-      "WHIZY_TWIN_GMAIL_BASE_URL": "http://localhost:9200",
-      "WHIZY_TWIN_DRIVE_BASE_URL": "http://localhost:9100"
+      "AGENT_SANDBOX_RUNTIME_MODE": "twin",
+      "AGENT_SANDBOX_TWIN_GMAIL_BASE_URL": "http://localhost:9200",
+      "AGENT_SANDBOX_TWIN_DRIVE_BASE_URL": "http://localhost:9100"
     },
     "session_state": {}
   },

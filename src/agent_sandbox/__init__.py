@@ -1,1 +1,1 @@
-"""Standalone Whizy Lab package boundary."""
+"""Reusable workflow and agent sandbox engine for digital twins."""

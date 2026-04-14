@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://whizy.dev/labs/v3/http_protocols/agno-agentos-workflow.config.schema.json",
+  "$id": "https://agent-sandbox.dev/schema/v3/http_protocols/agno-agentos-workflow.config.schema.json",
   "type": "object",
   "required": ["url"],
   "properties": {

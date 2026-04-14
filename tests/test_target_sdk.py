@@ -19,9 +19,9 @@ def test_target_sdk_defaults_to_live() -> None:
 def test_target_sdk_twin_mode_and_urls() -> None:
     cfg = load_target_runtime_config(
         env={
-            "WHIZY_RUNTIME_MODE": "twin",
-            "WHIZY_TWIN_GMAIL_BASE_URL": "http://gmail-twin:9200",
-            "WHIZY_TWIN_DRIVE_BASE_URL": "http://drive-twin:9100",
+            "AGENT_SANDBOX_RUNTIME_MODE": "twin",
+            "AGENT_SANDBOX_TWIN_GMAIL_BASE_URL": "http://gmail-twin:9200",
+            "AGENT_SANDBOX_TWIN_DRIVE_BASE_URL": "http://drive-twin:9100",
         }
     )
     assert cfg.mode == "twin"
@@ -31,7 +31,7 @@ def test_target_sdk_twin_mode_and_urls() -> None:
 
 
 def test_target_sdk_unknown_mode_normalizes_to_live() -> None:
-    cfg = load_target_runtime_config(env={"WHIZY_RUNTIME_MODE": "google"})
+    cfg = load_target_runtime_config(env={"AGENT_SANDBOX_RUNTIME_MODE": "google"})
     assert cfg.mode == "live"
 
 

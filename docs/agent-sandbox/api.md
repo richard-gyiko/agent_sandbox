@@ -61,10 +61,10 @@
   - `AGENT_SANDBOX_ADAPTER_STRICT_CONTRACT`
   - `AGENT_SANDBOX_SANDBOX_HTTP_HOSTS`
 - Twin endpoints:
-  - `WHIZY_TWIN_GMAIL_BASE_URL`
-  - `WHIZY_TWIN_DRIVE_BASE_URL`
+  - `AGENT_SANDBOX_TWIN_GMAIL_BASE_URL`
+  - `AGENT_SANDBOX_TWIN_DRIVE_BASE_URL`
 - Runtime mode:
-  - `WHIZY_RUNTIME_MODE`
+  - `AGENT_SANDBOX_RUNTIME_MODE`
 - Determinism/fault controls:
   - `AGENT_SANDBOX_CLOCK_FIXED_NOW`
   - `AGENT_SANDBOX_RANDOM_SEED`
@@ -80,15 +80,14 @@
 
 ## Compatibility Notes
 
-- `whizy_lab` Python compatibility package has been removed.
 - Published adapter HTTP contract:
   - `src/agent_sandbox/resources/v3/openapi/adapter-runner.openapi.yaml`
   - Versioning policy: `docs/agent-sandbox/contract-versioning.md`
 
 ## Target SDK
 
-- Python helper module: `whizy.runtime`
-- Use `load_runtime_config()` in target workflows/agents to resolve:
+- Python helper module: `agent_sandbox.target_sdk`
+- Use `load_target_runtime_config()` in target workflows/agents to resolve:
   - mode (`live|twin`)
   - twin Gmail/Drive base URLs
 - Optional runtime behavior events:

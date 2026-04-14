@@ -134,14 +134,14 @@ def default_endpoints() -> TwinEndpoints:
     return TwinEndpoints(
         gmail_base_url=(
             getenv(
-                "WHIZY_TWIN_GMAIL_BASE_URL",
+                "AGENT_SANDBOX_TWIN_GMAIL_BASE_URL",
                 default="http://localhost:9200",
             )
             or "http://localhost:9200"
         ),
         drive_base_url=(
             getenv(
-                "WHIZY_TWIN_DRIVE_BASE_URL",
+                "AGENT_SANDBOX_TWIN_DRIVE_BASE_URL",
                 default="http://localhost:9100",
             )
             or "http://localhost:9100"
@@ -1164,9 +1164,9 @@ def _apply_runtime_env(scenario: dict[str, Any], endpoints: TwinEndpoints):
     if fault_preset is not None and str(fault_preset).strip():
         runtime_controls["AGENT_SANDBOX_FAULT_PRESET"] = str(fault_preset)
     defaults = {
-        "WHIZY_RUNTIME_MODE": "twin",
-        "WHIZY_TWIN_GMAIL_BASE_URL": endpoints.gmail_base_url,
-        "WHIZY_TWIN_DRIVE_BASE_URL": endpoints.drive_base_url,
+        "AGENT_SANDBOX_RUNTIME_MODE": "twin",
+        "AGENT_SANDBOX_TWIN_GMAIL_BASE_URL": endpoints.gmail_base_url,
+        "AGENT_SANDBOX_TWIN_DRIVE_BASE_URL": endpoints.drive_base_url,
         "DATABASE_URL": "",
         "GDRIVE_ROOT_FOLDER_ID": _resolve_root_folder_id(scenario),
     }

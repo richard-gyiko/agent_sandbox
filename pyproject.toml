@@ -1,5 +1,5 @@
 [project]
-name = "agent-sanbox"
+name = "agent-sandbox"
 version = "0.1.0"
 description = "Reusable workflow and agent sandbox engine for digital twins"
 readme = "README.md"

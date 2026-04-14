@@ -42,8 +42,8 @@ def load_schema_json(relpath: str) -> dict[str, Any]:
 def validate_kind_schema(kind: str, data: dict[str, Any]) -> None:
     main_schema = load_schema_json(f"{kind}.schema.json")
     shared_schema = load_schema_json("shared.schema.json")
-    shared_uri = "https://whizy.dev/labs/v3/shared.schema.json"
-    main_uri = str(main_schema.get("$id", f"https://whizy.dev/labs/v3/{kind}.schema.json"))
+    shared_uri = "https://agent-sandbox.dev/schema/v3/shared.schema.json"
+    main_uri = str(main_schema.get("$id", f"https://agent-sandbox.dev/schema/v3/{kind}.schema.json"))
     registry = (
         Registry()
         .with_resource(shared_uri, Resource.from_contents(shared_schema))

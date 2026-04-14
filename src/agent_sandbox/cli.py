@@ -87,7 +87,7 @@ def _cmd_scenario(args: argparse.Namespace) -> int:
             "agent_sandbox.run.id": run_id,
             "agent_sandbox.scenario.name": scenario.get("meta", {}).get("name", ""),
             "agent_sandbox.scenario.version": scenario.get("version", 3),
-            "agent_sandbox.client.mode": (getenv("WHIZY_RUNTIME_MODE", default="twin") or "twin"),
+            "agent_sandbox.client.mode": (getenv("AGENT_SANDBOX_RUNTIME_MODE", default="twin") or "twin"),
         }
 
         observ_overrides: dict[str, str] = {}
@@ -375,27 +375,27 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
 
     checks.append(
         (
-            "env.var.WHIZY_RUNTIME_MODE",
+            "env.var.AGENT_SANDBOX_RUNTIME_MODE",
             True,
-            getenv("WHIZY_RUNTIME_MODE", default="(unset)") or "(unset)",
+            getenv("AGENT_SANDBOX_RUNTIME_MODE", default="(unset)") or "(unset)",
         )
     )
     gmail_base = (
         getenv(
-            "WHIZY_TWIN_GMAIL_BASE_URL",
+            "AGENT_SANDBOX_TWIN_GMAIL_BASE_URL",
             default=endpoints.gmail_base_url,
         )
         or endpoints.gmail_base_url
     )
     drive_base = (
         getenv(
-            "WHIZY_TWIN_DRIVE_BASE_URL",
+            "AGENT_SANDBOX_TWIN_DRIVE_BASE_URL",
             default=endpoints.drive_base_url,
         )
         or endpoints.drive_base_url
     )
-    checks.append(("env.var.WHIZY_TWIN_GMAIL_BASE_URL", True, gmail_base))
-    checks.append(("env.var.WHIZY_TWIN_DRIVE_BASE_URL", True, drive_base))
+    checks.append(("env.var.AGENT_SANDBOX_TWIN_GMAIL_BASE_URL", True, gmail_base))
+    checks.append(("env.var.AGENT_SANDBOX_TWIN_DRIVE_BASE_URL", True, drive_base))
 
     try:
         ensure_twins_available(endpoints, timeout_s=float(args.timeout_s))
@@ -705,7 +705,7 @@ def _execute_named_run(
         "agent_sandbox.run.spec_id": run_spec.get("meta", {}).get("id", ""),
         "agent_sandbox.scenario.name": scenario.get("meta", {}).get("name", ""),
         "agent_sandbox.scenario.version": scenario.get("version", 3),
-        "agent_sandbox.client.mode": (getenv("WHIZY_RUNTIME_MODE", default="twin") or "twin"),
+        "agent_sandbox.client.mode": (getenv("AGENT_SANDBOX_RUNTIME_MODE", default="twin") or "twin"),
     }
 
     observ_overrides: dict[str, str] = {}

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://whizy.dev/labs/v3/environment.schema.json",
+  "$id": "https://agent-sandbox.dev/schema/v3/environment.schema.json",
   "type": "object",
   "required": ["version", "kind", "meta"],
   "properties": {

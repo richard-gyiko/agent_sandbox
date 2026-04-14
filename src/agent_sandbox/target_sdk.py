@@ -42,11 +42,11 @@ def load_target_runtime_config(
     *,
     default_mode: str = "live",
 ) -> TargetRuntimeConfig:
-    """Load runtime config from WHIZY_* environment variables."""
+    """Load runtime config from AGENT_SANDBOX_* environment variables."""
     source = env or os.environ
-    raw_mode = source.get("WHIZY_RUNTIME_MODE", default_mode)
-    gmail_base = source.get("WHIZY_TWIN_GMAIL_BASE_URL", "http://localhost:9200")
-    drive_base = source.get("WHIZY_TWIN_DRIVE_BASE_URL", "http://localhost:9100")
+    raw_mode = source.get("AGENT_SANDBOX_RUNTIME_MODE", default_mode)
+    gmail_base = source.get("AGENT_SANDBOX_TWIN_GMAIL_BASE_URL", "http://localhost:9200")
+    drive_base = source.get("AGENT_SANDBOX_TWIN_DRIVE_BASE_URL", "http://localhost:9100")
     return RuntimeConfig(
         mode=_normalize_mode(raw_mode),
         twin_gmail_base_url=str(gmail_base),

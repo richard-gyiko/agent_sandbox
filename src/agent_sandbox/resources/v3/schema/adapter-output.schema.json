@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://whizy.dev/labs/v3/adapter-output.schema.json",
+  "$id": "https://agent-sandbox.dev/schema/v3/adapter-output.schema.json",
   "type": "object",
   "required": ["schema_version", "status", "result"],
   "properties": {

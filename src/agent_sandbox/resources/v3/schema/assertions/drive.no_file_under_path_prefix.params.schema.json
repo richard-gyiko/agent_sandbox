@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://whizy.dev/labs/v3/assertions/drive.no_file_under_path_prefix.params.schema.json",
+  "$id": "https://agent-sandbox.dev/schema/v3/assertions/drive.no_file_under_path_prefix.params.schema.json",
   "type": "object",
   "required": ["path_prefix"],
   "properties": {

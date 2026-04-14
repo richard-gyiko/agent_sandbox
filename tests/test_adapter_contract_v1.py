@@ -26,8 +26,8 @@ def test_adapter_contract_resources_mirror_labs_docs() -> None:
     )
     openapi_pkg = _load_yaml("src/agent_sandbox/resources/v3/openapi/adapter-runner.openapi.yaml")
 
-    assert adapter_input_pkg["$id"] == "https://whizy.dev/labs/v3/adapter-input.schema.json"
-    assert adapter_output_pkg["$id"] == "https://whizy.dev/labs/v3/adapter-output.schema.json"
+    assert adapter_input_pkg["$id"] == "https://agent-sandbox.dev/schema/v3/adapter-input.schema.json"
+    assert adapter_output_pkg["$id"] == "https://agent-sandbox.dev/schema/v3/adapter-output.schema.json"
     assert openapi_pkg["openapi"] == "3.1.0"
 
 

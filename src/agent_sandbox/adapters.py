@@ -249,13 +249,13 @@ def _adapter_runtime_env(
     runtime_env = {
         str(key): str(value) for key, value in compiled.get("runtime", {}).get("env", {}).items()
     }
-    runtime_env.setdefault("WHIZY_RUNTIME_MODE", "twin")
+    runtime_env.setdefault("AGENT_SANDBOX_RUNTIME_MODE", "twin")
     runtime_env.setdefault(
-        "WHIZY_TWIN_GMAIL_BASE_URL",
+        "AGENT_SANDBOX_TWIN_GMAIL_BASE_URL",
         str(getattr(endpoints, "gmail_base_url", "")),
     )
     runtime_env.setdefault(
-        "WHIZY_TWIN_DRIVE_BASE_URL",
+        "AGENT_SANDBOX_TWIN_DRIVE_BASE_URL",
         str(getattr(endpoints, "drive_base_url", "")),
     )
     runtime_env.setdefault("DATABASE_URL", "")

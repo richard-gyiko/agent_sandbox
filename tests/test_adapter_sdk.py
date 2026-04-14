@@ -54,8 +54,8 @@ def test_adapter_failed_shape() -> None:
 
 def test_scoped_runtime_env_applies_and_restores() -> None:
     payload = _load_fixture("valid_adapter_input.json")
-    original = os.environ.get("WHIZY_RUNTIME_MODE")
+    original = os.environ.get("AGENT_SANDBOX_RUNTIME_MODE")
     with scoped_runtime_env(payload):
-        assert os.environ.get("WHIZY_RUNTIME_MODE") == "twin"
-        assert os.environ.get("WHIZY_TWIN_GMAIL_BASE_URL") == "http://localhost:9200"
-    assert os.environ.get("WHIZY_RUNTIME_MODE") == original
+        assert os.environ.get("AGENT_SANDBOX_RUNTIME_MODE") == "twin"
+        assert os.environ.get("AGENT_SANDBOX_TWIN_GMAIL_BASE_URL") == "http://localhost:9200"
+    assert os.environ.get("AGENT_SANDBOX_RUNTIME_MODE") == original
