@@ -87,7 +87,9 @@ def _cmd_scenario(args: argparse.Namespace) -> int:
             "agent_sandbox.run.id": run_id,
             "agent_sandbox.scenario.name": scenario.get("meta", {}).get("name", ""),
             "agent_sandbox.scenario.version": scenario.get("version", 3),
-            "agent_sandbox.client.mode": (getenv("AGENT_SANDBOX_RUNTIME_MODE", default="twin") or "twin"),
+            "agent_sandbox.client.mode": (
+                getenv("AGENT_SANDBOX_RUNTIME_MODE", default="twin") or "twin"
+            ),
         }
 
         observ_overrides: dict[str, str] = {}
@@ -698,7 +700,7 @@ def _execute_named_run(
         "agent_sandbox.run.spec_id": run_spec.get("meta", {}).get("id", ""),
         "agent_sandbox.scenario.name": scenario.get("meta", {}).get("name", ""),
         "agent_sandbox.scenario.version": scenario.get("version", 3),
-        "agent_sandbox.client.mode": (getenv("AGENT_SANDBOX_RUNTIME_MODE", default="twin") or "twin"),
+        "agent_sandbox.client.mode": getenv("AGENT_SANDBOX_RUNTIME_MODE", default="twin") or "twin",
     }
 
     observ_overrides: dict[str, str] = {}

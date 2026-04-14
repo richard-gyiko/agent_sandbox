@@ -146,7 +146,10 @@ class ObservabilityStatus:
 
 def default_endpoints() -> TwinEndpoints:
     """Resolve twin endpoints from registered providers and environment."""
-    _ensure_twin_providers()
+    try:
+        _ensure_twin_providers()
+    except RuntimeError:
+        return TwinEndpoints(urls={})
     urls: dict[str, str] = {}
     for name, provider in get_all_twin_providers().items():
         env_var = provider.env_var_name()
@@ -1081,15 +1084,16 @@ def _load_run_plugins(scenario: dict[str, Any]) -> None:
 
 
 def _ensure_twin_providers() -> None:
-    """Register built-in twin providers if none are registered."""
+    """Ensure at least one twin provider is registered."""
     if list_twin_providers():
         return
     try:
         import agent_sandbox_twins  # noqa: F401
     except ImportError:
-        from agent_sandbox._builtin_twins import register_builtin_providers
-
-        register_builtin_providers()
+        raise RuntimeError(
+            "No twin providers registered. "
+            "Install agent-sandbox-twins: pip install agent-sandbox-twins"
+        ) from None
 
 
 def _ensure_execution_registry() -> None:

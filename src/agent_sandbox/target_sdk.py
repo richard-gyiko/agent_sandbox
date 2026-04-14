@@ -57,18 +57,20 @@ def load_target_runtime_config(
     source = env or os.environ
     raw_mode = source.get("AGENT_SANDBOX_RUNTIME_MODE", default_mode)
     twin_urls: dict[str, str] = {}
-    try:
-        from agent_sandbox.twin_provider import get_all_twin_providers
+    from agent_sandbox.twin_provider import get_all_twin_providers
 
-        for name, provider in get_all_twin_providers().items():
+    providers = get_all_twin_providers()
+    if providers:
+        for name, provider in providers.items():
             twin_urls[name] = source.get(provider.env_var_name(), provider.default_base_url())
-    except ImportError:
-        twin_urls["gmail"] = source.get(
-            "AGENT_SANDBOX_TWIN_GMAIL_BASE_URL", "http://localhost:9200"
-        )
-        twin_urls["drive"] = source.get(
-            "AGENT_SANDBOX_TWIN_DRIVE_BASE_URL", "http://localhost:9100"
-        )
+    else:
+        # No providers registered — scan env directly for twin URLs
+        _prefix = "AGENT_SANDBOX_TWIN_"
+        _suffix = "_BASE_URL"
+        for key, value in source.items():
+            if key.startswith(_prefix) and key.endswith(_suffix):
+                name = key[len(_prefix) : -len(_suffix)].lower()
+                twin_urls[name] = value
     return RuntimeConfig(
         mode=_normalize_mode(raw_mode),
         twin_urls=twin_urls,

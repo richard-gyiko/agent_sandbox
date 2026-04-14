@@ -16,7 +16,6 @@ from agent_sandbox.schema import validate_schema_doc
 RequestJsonFn = Callable[..., dict[str, Any]]
 RequestFormFn = Callable[..., dict[str, Any]]
 ValidateAdapterDocFn = Callable[[str, dict[str, Any]], None]
-ResolveRootFolderFn = Callable[[dict[str, Any]], str]
 
 HttpProtocolHandler = Callable[
     [
@@ -180,12 +179,10 @@ def execute_adapter_run(
     validate_adapter_doc: ValidateAdapterDocFn | None = None,
     request_json_fn: RequestJsonFn | None = None,
     request_form_fn: RequestFormFn | None = None,
-    resolve_root_folder_id: ResolveRootFolderFn | None = None,
 ) -> dict[str, Any]:
     validate = validate_adapter_doc or _validate_adapter_doc
     request_json_impl = request_json_fn or request_json
     request_form_impl = request_form_fn or request_form
-    resolve_root = resolve_root_folder_id or _default_root_folder_id
 
     execution = run_spec.get("execution", {})
     adapter = execution.get("adapter", {})
@@ -194,7 +191,7 @@ def execute_adapter_run(
     timeout_s = float(adapter.get("timeout_s", 300))
     strict_contract = _resolve_adapter_strict_contract(adapter)
     isolation_mode = _resolve_isolation_mode(run_spec)
-    runtime_env = _adapter_runtime_env(compiled, endpoints, resolve_root)
+    runtime_env = _adapter_runtime_env(compiled, endpoints)
     payload = _build_adapter_input_payload(compiled, run_spec, session_id, runtime_env)
     validate("adapter-input", payload)
 
@@ -224,27 +221,10 @@ def execute_adapter_run(
     return _coerce_adapter_result(output, session_id, adapter_type)
 
 
-def _default_root_folder_id(compiled: dict[str, Any]) -> str:
-    root_id = "root"
-    drive_seed = compiled.get("seed", {}).get("drive", {})
-    folders = drive_seed.get("folders", [])
-    if not folders:
-        folders = [
-            item
-            for item in drive_seed.get("files", [])
-            if isinstance(item, dict) and item.get("kind") == "Folder"
-        ]
-    for folder in folders:
-        if folder.get("parent_id") is None:
-            root_id = folder.get("id", "root")
-            break
-    return root_id
-
 
 def _adapter_runtime_env(
     compiled: dict[str, Any],
     endpoints: Any,
-    resolve_root_folder_id: ResolveRootFolderFn,
 ) -> dict[str, str]:
     from agent_sandbox.twin_provider import get_all_twin_providers
 
@@ -252,22 +232,10 @@ def _adapter_runtime_env(
         str(key): str(value) for key, value in compiled.get("runtime", {}).get("env", {}).items()
     }
     runtime_env.setdefault("AGENT_SANDBOX_RUNTIME_MODE", "twin")
-    providers = get_all_twin_providers()
-    if providers:
-        for name, provider in providers.items():
-            base_url = getattr(endpoints, "urls", {}).get(name, provider.default_base_url())
-            for env_key, env_val in provider.runtime_env_defaults(base_url, compiled).items():
-                runtime_env.setdefault(env_key, env_val)
-    else:
-        runtime_env.setdefault(
-            "AGENT_SANDBOX_TWIN_GMAIL_BASE_URL",
-            str(getattr(endpoints, "gmail_base_url", "")),
-        )
-        runtime_env.setdefault(
-            "AGENT_SANDBOX_TWIN_DRIVE_BASE_URL",
-            str(getattr(endpoints, "drive_base_url", "")),
-        )
-        runtime_env.setdefault("GDRIVE_ROOT_FOLDER_ID", resolve_root_folder_id(compiled))
+    for name, provider in get_all_twin_providers().items():
+        base_url = getattr(endpoints, "urls", {}).get(name, provider.default_base_url())
+        for env_key, env_val in provider.runtime_env_defaults(base_url, compiled).items():
+            runtime_env.setdefault(env_key, env_val)
     runtime_env.setdefault("DATABASE_URL", "")
     return runtime_env
 
