@@ -1,22 +1,24 @@
 # agent_sandbox
 
-A test harness for LLM-powered agents that interact with Gmail and Drive. Instead of letting your agent touch real Google APIs during development and testing, it runs against local **digital twins** — mock HTTP services that behave like Gmail and Drive but store everything locally.
+A test harness for LLM-powered agents. Instead of letting your agent call real APIs during development and testing, it runs against **digital twins** — local mock services that behave like the real thing but keep everything isolated and reproducible.
 
-You write declarative specs that define initial state (emails, files), run your agent, then assert on what it did.
+You write declarative specs that define initial state, run your agent, then assert on what it did.
+
+The engine is service-agnostic — any API can be twin'd. Gmail and Drive twins are the current implementations available in the [digital-twins](https://github.com/richard-gyiko/digital-twins) repo.
 
 ## Why
 
-Testing an AI agent that reads emails, creates files, or manages labels is hard:
+Testing an AI agent that interacts with external services is hard:
 
 - Real API calls are slow, rate-limited, and non-deterministic
 - You can't easily control initial state or replay scenarios
-- A bug in your agent might delete real emails or share files it shouldn't
+- A bug in your agent might cause real side effects (deleted data, sent emails, shared files)
 
-Agent Sandbox solves this by giving your agent a fake but realistic Gmail/Drive to work against, with full control over initial state and built-in assertions to verify behavior.
+Agent Sandbox solves this by giving your agent a fake but realistic service to work against, with full control over initial state and built-in assertions to verify behavior.
 
 ## How It Works
 
-1. **Define a scenario** (YAML) — seed Gmail/Drive twins with initial state and declare expected outcomes
+1. **Define a scenario** (YAML) — seed twins with initial state and declare expected outcomes
 2. **Define a run** — link a scenario to your agent/workflow, choose execution mode and isolation level
 3. **Execute** — the engine resets twins, seeds them, runs your agent, snapshots final state, and checks assertions
 
@@ -24,7 +26,7 @@ Agent Sandbox solves this by giving your agent a fake but realistic Gmail/Drive 
 agent-sandbox run execute my_agent_test --assert-after
 ```
 
-Your agent connects to the twins via standard Google API-compatible HTTP endpoints. It doesn't need to know it's in a sandbox.
+Your agent connects to the twins via standard API-compatible HTTP endpoints. It doesn't need to know it's in a sandbox.
 
 ## Quick Start
 
@@ -49,9 +51,9 @@ Spec content (environments, scenarios, runs) lives in the [digital-twins](https:
 
 | Concept | What it is |
 |---------|-----------|
-| **Digital twin** | Local mock HTTP server implementing Gmail/Drive APIs |
+| **Digital twin** | Local mock HTTP service that implements a real API's contract |
 | **Environment** | Configuration for twin endpoints, plugins, and runtime settings |
-| **Scenario** | Test case: seed state (emails, files) + expected assertions |
+| **Scenario** | Test case: seed state + expected assertions |
 | **Run** | Executable spec linking an environment + scenario + target agent |
 | **Adapter** | Bridge to invoke external agents via HTTP or shell command |
 | **Assertion** | Check on final twin state (e.g., file exists, label applied, op count) |
