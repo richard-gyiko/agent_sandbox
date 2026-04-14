@@ -380,26 +380,19 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
             getenv("AGENT_SANDBOX_RUNTIME_MODE", default="(unset)") or "(unset)",
         )
     )
-    gmail_base = (
-        getenv(
-            "AGENT_SANDBOX_TWIN_GMAIL_BASE_URL",
-            default=endpoints.gmail_base_url,
-        )
-        or endpoints.gmail_base_url
-    )
-    drive_base = (
-        getenv(
-            "AGENT_SANDBOX_TWIN_DRIVE_BASE_URL",
-            default=endpoints.drive_base_url,
-        )
-        or endpoints.drive_base_url
-    )
-    checks.append(("env.var.AGENT_SANDBOX_TWIN_GMAIL_BASE_URL", True, gmail_base))
-    checks.append(("env.var.AGENT_SANDBOX_TWIN_DRIVE_BASE_URL", True, drive_base))
+    from agent_sandbox.twin_provider import get_all_twin_providers
+
+    for name, provider in get_all_twin_providers().items():
+        env_var = provider.env_var_name()
+        url = endpoints.urls.get(name, provider.default_base_url())
+        checks.append((f"env.var.{env_var}", True, url))
 
     try:
         ensure_twins_available(endpoints, timeout_s=float(args.timeout_s))
-        checks.append(("twins.reachable", True, "gmail+drive reachable"))
+        from agent_sandbox.twin_provider import list_twin_providers
+
+        names = "+".join(list_twin_providers())
+        checks.append(("twins.reachable", True, f"{names} reachable"))
     except Exception as error:
         checks.append(("twins.reachable", False, str(error)))
 

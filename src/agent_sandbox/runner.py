@@ -11,7 +11,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 import yaml
@@ -25,6 +24,7 @@ from agent_sandbox.env import getenv, scoped_env
 from agent_sandbox.schema import load_schema_json, validate_kind_schema, validate_schema_doc
 from agent_sandbox.target_sdk import capture_events
 from agent_sandbox.telemetry import observed_span
+from agent_sandbox.twin_provider import get_all_twin_providers, list_twin_providers
 from agent_sandbox.validation import plugin_policy_env
 
 AssertionHandler = Callable[[dict[str, Any], "ScenarioContext"], None]
@@ -112,8 +112,23 @@ class ScenarioContext:
 class TwinEndpoints:
     """HTTP endpoints for twin services."""
 
-    gmail_base_url: str
-    drive_base_url: str
+    urls: dict[str, str]
+
+    @property
+    def gmail_base_url(self) -> str:
+        return self.urls.get("gmail", "http://localhost:9200")
+
+    @gmail_base_url.setter
+    def gmail_base_url(self, value: str) -> None:
+        self.urls["gmail"] = value
+
+    @property
+    def drive_base_url(self) -> str:
+        return self.urls.get("drive", "http://localhost:9100")
+
+    @drive_base_url.setter
+    def drive_base_url(self, value: str) -> None:
+        self.urls["drive"] = value
 
 
 class TwinUnavailableError(RuntimeError):
@@ -130,23 +145,14 @@ class ObservabilityStatus:
 
 
 def default_endpoints() -> TwinEndpoints:
-    """Resolve twin endpoints from environment defaults."""
-    return TwinEndpoints(
-        gmail_base_url=(
-            getenv(
-                "AGENT_SANDBOX_TWIN_GMAIL_BASE_URL",
-                default="http://localhost:9200",
-            )
-            or "http://localhost:9200"
-        ),
-        drive_base_url=(
-            getenv(
-                "AGENT_SANDBOX_TWIN_DRIVE_BASE_URL",
-                default="http://localhost:9100",
-            )
-            or "http://localhost:9100"
-        ),
-    )
+    """Resolve twin endpoints from registered providers and environment."""
+    _ensure_twin_providers()
+    urls: dict[str, str] = {}
+    for name, provider in get_all_twin_providers().items():
+        env_var = provider.env_var_name()
+        default = provider.default_base_url()
+        urls[name] = getenv(env_var, default=default) or default
+    return TwinEndpoints(urls=urls)
 
 
 def ducklens_base_url() -> str:
@@ -395,15 +401,20 @@ def _validate_scenario_contracts(scenario: dict[str, Any]) -> None:
 
 
 def ensure_twins_available(endpoints: TwinEndpoints, timeout_s: float = 20.0) -> None:
-    """Validate that both twin services are reachable."""
+    """Validate that all registered twin services are reachable."""
+    _ensure_twin_providers()
+    providers = get_all_twin_providers()
+    if not providers:
+        raise TwinUnavailableError("No twin providers registered.")
     deadline = time.time() + timeout_s
     last_error: Exception | None = None
     while time.time() < deadline:
         try:
-            _get_json(f"{endpoints.gmail_base_url}/health")
-            _get_json(f"{endpoints.drive_base_url}/health")
+            for name, provider in providers.items():
+                base_url = endpoints.urls.get(name, provider.default_base_url())
+                provider.health_check(base_url)
             return
-        except URLError as error:
+        except Exception as error:
             last_error = error
             time.sleep(0.25)
     raise TwinUnavailableError(
@@ -523,137 +534,33 @@ def materialize_run(run_spec: dict[str, Any]) -> dict[str, Any]:
 
 
 def reset_twins(endpoints: TwinEndpoints) -> None:
-    """Reset twin services to empty state."""
-    payload = {"seed": 0, "start_time_unix_ms": 0}
-    _post_json(f"{endpoints.gmail_base_url}/control/reset", payload)
-    _post_json(f"{endpoints.drive_base_url}/control/reset", payload)
+    """Reset all registered twin services to empty state."""
+    _ensure_twin_providers()
+    for name, provider in get_all_twin_providers().items():
+        base_url = endpoints.urls.get(name, provider.default_base_url())
+        provider.reset(base_url)
 
 
 def seed_twins(endpoints: TwinEndpoints, scenario: dict[str, Any]) -> None:
     """Seed twin states from scenario definition."""
+    _ensure_twin_providers()
     seed = scenario.get("seed", {})
-    _post_json(
-        f"{endpoints.gmail_base_url}/control/seed",
-        seed.get("gmail", {"messages": []}),
-    )
-    _post_json(
-        f"{endpoints.drive_base_url}/control/seed",
-        seed.get("drive", {"files": []}),
-    )
-
-
-def _reshape_gmail_snapshot(state: dict[str, Any]) -> dict[str, Any]:
-    service_state = state.get("service_state", {})
-    messages_map = service_state.get("messages", {})
-    labels_map = service_state.get("labels", {})
-
-    label_names: dict[str, str] = {}
-    if isinstance(labels_map, dict):
-        for label_id, label in labels_map.items():
-            if isinstance(label, dict):
-                label_names[str(label_id)] = str(label.get("name", label_id))
-
-    messages: list[dict[str, Any]] = []
-    if isinstance(messages_map, dict):
-        for message_id, message in messages_map.items():
-            if not isinstance(message, dict):
-                continue
-            label_ids = message.get("label_ids", [])
-            labels = [label_names.get(str(label_id), str(label_id)) for label_id in label_ids]
-            to_field = message.get("to", [])
-            cc_field = message.get("cc", [])
-            to_text = ", ".join(to_field) if isinstance(to_field, list) else str(to_field)
-            cc_text = ", ".join(cc_field) if isinstance(cc_field, list) else str(cc_field)
-            messages.append(
-                {
-                    "id": str(message.get("id", message_id)),
-                    "thread_id": str(message.get("thread_id", "")),
-                    "subject": message.get("subject"),
-                    "sender": message.get("from"),
-                    "to": to_text,
-                    "cc": cc_text,
-                    "date": message.get("internal_date"),
-                    "snippet": message.get("snippet"),
-                    "body_plain": message.get("body_text"),
-                    "body_html": message.get("body_html"),
-                    "labels": labels,
-                    "attachments": message.get("attachments", []),
-                }
-            )
-    return {"messages": messages}
-
-
-def _reshape_drive_snapshot(state: dict[str, Any]) -> dict[str, Any]:
-    service_state = state.get("service_state", {})
-    items = service_state.get("items", {})
-
-    folders: list[dict[str, Any]] = []
-    files: list[dict[str, Any]] = []
-
-    if isinstance(items, dict):
-        for item_id, item in items.items():
-            if not isinstance(item, dict):
-                continue
-            base = {
-                "id": str(item.get("id", item_id)),
-                "name": item.get("name"),
-                "parent_id": item.get("parent_id"),
-            }
-            kind = str(item.get("kind", ""))
-            if kind == "Folder":
-                folders.append(base)
-                continue
-            files.append(
-                {
-                    **base,
-                    "mime_type": item.get("mime_type"),
-                    "app_properties": item.get("app_properties", {}),
-                }
-            )
-
-    return {"folders": folders, "files": files}
-
-
-def _reshape_events(events: Any) -> list[dict[str, Any]]:
-    if not isinstance(events, list):
-        return []
-
-    reshaped: list[dict[str, Any]] = []
-    for event in events:
-        if not isinstance(event, dict):
-            continue
-        endpoint = str(event.get("endpoint", ""))
-        service = endpoint.split("/")[1] if "/" in endpoint else endpoint
-        operation = event.get("operation")
-        detail = event.get("detail")
-        reshaped.append(
-            {
-                "ts": event.get("logical_time_unix_ms"),
-                "service": service,
-                "action": operation or detail,
-                "request_id": event.get("request_id"),
-                "trace_id": event.get("trace_id"),
-                "request": {},
-                "status": event.get("outcome"),
-            }
-        )
-    return reshaped
+    for name, provider in get_all_twin_providers().items():
+        if name in seed:
+            base_url = endpoints.urls.get(name, provider.default_base_url())
+            provider.seed(base_url, seed[name])
 
 
 def snapshot_twins(endpoints: TwinEndpoints) -> dict[str, Any]:
-    """Collect complete snapshot and operation logs from twins."""
+    """Collect complete snapshot and operation logs from all registered twins."""
+    _ensure_twin_providers()
     ensure_twins_available(endpoints)
-    gmail_state = _get_json(f"{endpoints.gmail_base_url}/control/snapshot")
-    drive_state = _get_json(f"{endpoints.drive_base_url}/control/snapshot")
-    gmail_events = _get_json(f"{endpoints.gmail_base_url}/control/events")
-    drive_events = _get_json(f"{endpoints.drive_base_url}/control/events")
-
-    return {
-        "gmail": _reshape_gmail_snapshot(gmail_state),
-        "drive": _reshape_drive_snapshot(drive_state),
-        "gmail_ops": _reshape_events(gmail_events),
-        "drive_ops": _reshape_events(drive_events),
-    }
+    result: dict[str, Any] = {}
+    for name, provider in get_all_twin_providers().items():
+        base_url = endpoints.urls.get(name, provider.default_base_url())
+        result[name] = provider.snapshot(base_url)
+        result[f"{name}_ops"] = provider.events(base_url)
+    return result
 
 
 def run_scenario_actions(
@@ -1062,7 +969,6 @@ def _execute_adapter_run(
         validate_adapter_doc=_validate_adapter_doc,
         request_json_fn=_request_json,
         request_form_fn=_request_form,
-        resolve_root_folder_id=_resolve_root_folder_id,
     )
 
 
@@ -1132,23 +1038,6 @@ def _normalize_agent_id(agent_id: str) -> str:
     return agent_id.strip().lower().replace("_", "-")
 
 
-def _resolve_root_folder_id(scenario: dict[str, Any]) -> str:
-    root_id = "root"
-    drive_seed = scenario.get("seed", {}).get("drive", {})
-    folders = drive_seed.get("folders", [])
-    if not folders:
-        folders = [
-            item
-            for item in drive_seed.get("files", [])
-            if isinstance(item, dict) and item.get("kind") == "Folder"
-        ]
-    for folder in folders:
-        if folder.get("parent_id") is None:
-            root_id = folder.get("id", "root")
-            break
-    return root_id
-
-
 def _apply_runtime_env(scenario: dict[str, Any], endpoints: TwinEndpoints):
     runtime = scenario.get("runtime", {})
     runtime_env = runtime.get("env", {})
@@ -1163,13 +1052,10 @@ def _apply_runtime_env(scenario: dict[str, Any], endpoints: TwinEndpoints):
     fault_preset = runtime.get("faults", {}).get("preset")
     if fault_preset is not None and str(fault_preset).strip():
         runtime_controls["AGENT_SANDBOX_FAULT_PRESET"] = str(fault_preset)
-    defaults = {
-        "AGENT_SANDBOX_RUNTIME_MODE": "twin",
-        "AGENT_SANDBOX_TWIN_GMAIL_BASE_URL": endpoints.gmail_base_url,
-        "AGENT_SANDBOX_TWIN_DRIVE_BASE_URL": endpoints.drive_base_url,
-        "DATABASE_URL": "",
-        "GDRIVE_ROOT_FOLDER_ID": _resolve_root_folder_id(scenario),
-    }
+    defaults: dict[str, str] = {"AGENT_SANDBOX_RUNTIME_MODE": "twin", "DATABASE_URL": ""}
+    for name, provider in get_all_twin_providers().items():
+        base_url = endpoints.urls.get(name, provider.default_base_url())
+        defaults.update(provider.runtime_env_defaults(base_url, scenario))
     defaults.update(runtime_controls)
     return scoped_env(overrides=overrides, defaults=defaults)
 
@@ -1192,6 +1078,18 @@ def _load_run_plugins(scenario: dict[str, Any]) -> None:
     plugins = scenario.get("run", {}).get("plugins", [])
     if isinstance(plugins, list):
         load_execution_plugins([str(item) for item in plugins if str(item).strip()])
+
+
+def _ensure_twin_providers() -> None:
+    """Register built-in twin providers if none are registered."""
+    if list_twin_providers():
+        return
+    try:
+        import agent_sandbox_twins  # noqa: F401
+    except ImportError:
+        from agent_sandbox._builtin_twins import register_builtin_providers
+
+        register_builtin_providers()
 
 
 def _ensure_execution_registry() -> None:

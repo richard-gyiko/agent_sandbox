@@ -246,20 +246,29 @@ def _adapter_runtime_env(
     endpoints: Any,
     resolve_root_folder_id: ResolveRootFolderFn,
 ) -> dict[str, str]:
+    from agent_sandbox.twin_provider import get_all_twin_providers
+
     runtime_env = {
         str(key): str(value) for key, value in compiled.get("runtime", {}).get("env", {}).items()
     }
     runtime_env.setdefault("AGENT_SANDBOX_RUNTIME_MODE", "twin")
-    runtime_env.setdefault(
-        "AGENT_SANDBOX_TWIN_GMAIL_BASE_URL",
-        str(getattr(endpoints, "gmail_base_url", "")),
-    )
-    runtime_env.setdefault(
-        "AGENT_SANDBOX_TWIN_DRIVE_BASE_URL",
-        str(getattr(endpoints, "drive_base_url", "")),
-    )
+    providers = get_all_twin_providers()
+    if providers:
+        for name, provider in providers.items():
+            base_url = getattr(endpoints, "urls", {}).get(name, provider.default_base_url())
+            for env_key, env_val in provider.runtime_env_defaults(base_url, compiled).items():
+                runtime_env.setdefault(env_key, env_val)
+    else:
+        runtime_env.setdefault(
+            "AGENT_SANDBOX_TWIN_GMAIL_BASE_URL",
+            str(getattr(endpoints, "gmail_base_url", "")),
+        )
+        runtime_env.setdefault(
+            "AGENT_SANDBOX_TWIN_DRIVE_BASE_URL",
+            str(getattr(endpoints, "drive_base_url", "")),
+        )
+        runtime_env.setdefault("GDRIVE_ROOT_FOLDER_ID", resolve_root_folder_id(compiled))
     runtime_env.setdefault("DATABASE_URL", "")
-    runtime_env.setdefault("GDRIVE_ROOT_FOLDER_ID", resolve_root_folder_id(compiled))
     return runtime_env
 
 

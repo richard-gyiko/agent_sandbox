@@ -14,12 +14,23 @@ class RuntimeConfig:
     """Resolved runtime config for sandbox-backed target clients."""
 
     mode: str
-    twin_gmail_base_url: str
-    twin_drive_base_url: str
+    twin_urls: dict[str, str]
 
     @property
     def use_twin(self) -> bool:
         return self.mode == "twin"
+
+    def twin_url(self, name: str) -> str:
+        """Get a twin's base URL by provider name."""
+        return self.twin_urls.get(name, "")
+
+    @property
+    def twin_gmail_base_url(self) -> str:
+        return self.twin_urls.get("gmail", "http://localhost:9200")
+
+    @property
+    def twin_drive_base_url(self) -> str:
+        return self.twin_urls.get("drive", "http://localhost:9100")
 
 
 TargetRuntimeConfig: TypeAlias = RuntimeConfig
@@ -45,12 +56,22 @@ def load_target_runtime_config(
     """Load runtime config from AGENT_SANDBOX_* environment variables."""
     source = env or os.environ
     raw_mode = source.get("AGENT_SANDBOX_RUNTIME_MODE", default_mode)
-    gmail_base = source.get("AGENT_SANDBOX_TWIN_GMAIL_BASE_URL", "http://localhost:9200")
-    drive_base = source.get("AGENT_SANDBOX_TWIN_DRIVE_BASE_URL", "http://localhost:9100")
+    twin_urls: dict[str, str] = {}
+    try:
+        from agent_sandbox.twin_provider import get_all_twin_providers
+
+        for name, provider in get_all_twin_providers().items():
+            twin_urls[name] = source.get(provider.env_var_name(), provider.default_base_url())
+    except ImportError:
+        twin_urls["gmail"] = source.get(
+            "AGENT_SANDBOX_TWIN_GMAIL_BASE_URL", "http://localhost:9200"
+        )
+        twin_urls["drive"] = source.get(
+            "AGENT_SANDBOX_TWIN_DRIVE_BASE_URL", "http://localhost:9100"
+        )
     return RuntimeConfig(
         mode=_normalize_mode(raw_mode),
-        twin_gmail_base_url=str(gmail_base),
-        twin_drive_base_url=str(drive_base),
+        twin_urls=twin_urls,
     )
 
 
