@@ -41,6 +41,7 @@ packages = ["src/agent_sandbox"]
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+extend-exclude = ["twins/"]
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "C4", "UP", "ARG", "SIM", "TCH", "PTH", "PL", "RUF"]
