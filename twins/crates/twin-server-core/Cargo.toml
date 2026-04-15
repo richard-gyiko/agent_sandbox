@@ -1,0 +1,18 @@
+[package]
+name = "twin-server-core"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+twin-kernel = { path = "../twin-kernel" }
+twin-service = { path = "../twin-service" }
+twin-scenario = { path = "../twin-scenario" }
+axum.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tower = "0.5"

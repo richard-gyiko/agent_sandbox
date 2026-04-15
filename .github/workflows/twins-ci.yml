@@ -1,0 +1,209 @@
+name: Twins CI
+
+on:
+  push:
+    paths:
+      - "twins/**"
+      - ".github/workflows/twins-ci.yml"
+  pull_request:
+    paths:
+      - "twins/**"
+      - ".github/workflows/twins-ci.yml"
+
+defaults:
+  run:
+    working-directory: twins
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: twins
+
+      - name: Run tests
+        run: cargo test --workspace
+
+  determinism:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: twins
+
+      - name: Start twin-drive-server
+        run: |
+          cargo run --bin twin-drive-server > twin-drive-server.log 2>&1 &
+          echo $! > twin-drive-server.pid
+
+      - name: Wait for health
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://127.0.0.1:8080/health > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "server did not become healthy in time"
+          cat twin-drive-server.log || true
+          exit 1
+
+      - name: Validate scenario
+        run: |
+          curl -sf \
+            -H "content-type: application/json" \
+            -d @scenarios/ci-determinism.v1.json \
+            http://127.0.0.1:8080/control/scenario/validate > /dev/null
+
+      - name: Apply scenario file
+        run: |
+          RESPONSE=$(curl -sf \
+            -H "content-type: application/json" \
+            -d '{"path":"ci-determinism.v1.json"}' \
+            http://127.0.0.1:8080/control/scenario/apply-file)
+          RUN_ID=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["run_id"])' "$RESPONSE")
+          echo "RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+
+      - name: Verify replay determinism
+        run: |
+          RESPONSE=$(curl -sf -X POST \
+            http://127.0.0.1:8080/control/scenario/runs/${RUN_ID}/verify-replay)
+          OK=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["ok"])' "$RESPONSE")
+          if [ "$OK" != "True" ] && [ "$OK" != "true" ]; then
+            echo "Determinism check failed: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Stop twin-drive-server
+        if: always()
+        run: |
+          if [ -f twin-drive-server.pid ]; then
+            kill "$(cat twin-drive-server.pid)" || true
+          fi
+
+  scaffold:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: twins
+
+      - name: Build twin-cli
+        run: cargo build --package twin-cli
+
+      - name: Run scaffold
+        run: cargo run --package twin-cli -- new test-twin
+
+      - name: Verify generated code compiles
+        run: cargo check --package twin-test-twin --package twin-test-twin-server
+
+      - name: Clean up scaffolded files
+        if: always()
+        run: |
+          git checkout -- Cargo.toml
+          rm -rf crates/twin-test-twin apps/twin-test-twin-server docker/Dockerfile.test-twin scenarios/test-twin
+
+  codegen-check:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: twins
+
+      - name: Check Drive generated code is up-to-date
+        run: cargo run --package twin-cli -- generate --spec specs/drive.toml --output crates/twin-drive/src/generated.rs --check
+
+      - name: Check Gmail generated code is up-to-date
+        run: cargo run --package twin-cli -- generate --spec specs/gmail.toml --output crates/twin-gmail/src/generated.rs --check
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Drive Docker image
+        run: docker build -f docker/Dockerfile.drive -t twin-drive-server .
+
+      - name: Build Gmail Docker image
+        run: docker build -f docker/Dockerfile.gmail -t twin-gmail-server .
+
+      - name: Run Drive container
+        run: docker run -d --name drive-twin -p 8080:8080 twin-drive-server
+
+      - name: Run Gmail container
+        run: docker run -d --name gmail-twin -p 8081:8080 twin-gmail-server
+
+      - name: Wait for Drive health
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://127.0.0.1:8080/health > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "drive container did not become healthy in time"
+          docker logs drive-twin || true
+          exit 1
+
+      - name: Wait for Gmail health
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://127.0.0.1:8081/health > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "gmail container did not become healthy in time"
+          docker logs gmail-twin || true
+          exit 1
+
+      - name: Validate Drive scenario via Docker
+        run: |
+          curl -sf \
+            -H "content-type: application/json" \
+            -d @scenarios/ci-determinism.v1.json \
+            http://127.0.0.1:8080/control/scenario/validate > /dev/null
+
+      - name: Smoke test Gmail via Docker
+        run: |
+          curl -sf http://127.0.0.1:8081/health > /dev/null
+
+      - name: Stop and remove containers
+        if: always()
+        run: |
+          docker stop drive-twin gmail-twin || true
+          docker rm drive-twin gmail-twin || true

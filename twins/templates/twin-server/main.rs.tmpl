@@ -1,0 +1,36 @@
+//! Thin binary for the {{name}} digital twin.
+//!
+//! Wires [`{{Name}}TwinService`] into the generic twin-server-core host and
+//! starts listening.  All control-surface logic (scenarios, runs, fault
+//! injection, etc.) is provided by `twin-server-core`.
+
+use std::net::SocketAddr;
+use tracing::info;
+use twin_{{name_snake}}::{{Name}}TwinService;
+use twin_server_core::{EnvConfig, build_twin_router};
+
+#[tokio::main]
+async fn main() {
+    let env_config = EnvConfig::from_env();
+
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_new(&env_config.log_level)
+                .unwrap_or_else(|_| "info".into()),
+        )
+        .with_target(false)
+        .compact()
+        .init();
+
+    let port = env_config.port;
+    info!(?env_config, "resolved configuration");
+    let app = build_twin_router::<{{Name}}TwinService>(env_config.server);
+
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    info!("twin-{{name}}-server listening on {}", addr);
+
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .expect("bind listener");
+    axum::serve(listener, app).await.expect("serve");
+}

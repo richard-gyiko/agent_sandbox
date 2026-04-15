@@ -1,0 +1,28 @@
+# Rust build artifacts (huge)
+target/
+
+# Run artifact persistence
+runs/
+
+# Version control
+.git/
+.github/
+.gitignore
+
+# Documentation
+docs/
+*.md
+
+# Examples, scenarios, and templates (not needed in twin images)
+examples/
+scenarios/
+templates/
+
+# This file
+.dockerignore
+
+# Python cache
+__pycache__/
+
+# Problematic Windows file
+nul

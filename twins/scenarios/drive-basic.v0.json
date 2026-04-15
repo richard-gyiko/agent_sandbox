@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "name": "drive-basic",
+  "seed": 42,
+  "start_time_unix_ms": 1704067200000,
+  "actors": [
+    { "id": "alice", "label": "Alice Agent" },
+    { "id": "bob", "label": "Bob Collaborator" }
+  ],
+  "initial_state": {
+    "files": [
+      {
+        "id": "root",
+        "name": "My Drive",
+        "parent_id": null,
+        "owner_id": "alice",
+        "kind": "Folder"
+      }
+    ]
+  },
+  "timeline": [
+    {
+      "at_ms": 1000,
+      "actor_id": "alice",
+      "action": {
+        "type": "create_folder",
+        "parent_id": "root",
+        "name": "Reports"
+      }
+    },
+    {
+      "at_ms": 2500,
+      "actor_id": "alice",
+      "action": {
+        "type": "set_permission",
+        "item_id": "item_1",
+        "target_actor_id": "bob",
+        "role": "viewer"
+      }
+    }
+  ],
+  "faults": [
+    {
+      "id": "list-throttle",
+      "when": {
+        "endpoint": "/drive/folders",
+        "actor_id": "alice",
+        "probability": 0.25
+      },
+      "effect": {
+        "type": "http_error",
+        "status": 429,
+        "message": "quota exceeded"
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "id": "no-orphans",
+      "check": {
+        "type": "no_orphans"
+      }
+    }
+  ]
+}

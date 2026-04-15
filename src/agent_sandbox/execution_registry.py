@@ -10,8 +10,8 @@ _ACTIONS: dict[str, Any] = {}
 _WORKFLOW_RUNNERS: dict[str, Any] = {}
 _AGENT_RUNNERS: dict[str, Any] = {}
 _AGENT_CANONICAL: dict[str, str] = {}
-_ASSERTION_PARAM_SCHEMAS: dict[str, str] = {}
-_ACTION_PARAM_SCHEMAS: dict[str, str] = {}
+_ASSERTION_PARAM_SCHEMAS: dict[str, tuple[str, str]] = {}  # kind -> (relpath, package)
+_ACTION_PARAM_SCHEMAS: dict[str, tuple[str, str]] = {}  # kind -> (relpath, package)
 
 
 @dataclass
@@ -42,12 +42,16 @@ def register_agent_runner(canonical: str, handler: Any, aliases: tuple[str, ...]
         _AGENT_CANONICAL[alias] = canonical
 
 
-def register_assertion_param_schema(kind: str, schema_relpath: str) -> None:
-    _ASSERTION_PARAM_SCHEMAS[kind] = schema_relpath
+def register_assertion_param_schema(
+    kind: str, schema_relpath: str, *, package: str = "agent_sandbox"
+) -> None:
+    _ASSERTION_PARAM_SCHEMAS[kind] = (schema_relpath, package)
 
 
-def register_action_param_schema(kind: str, schema_relpath: str) -> None:
-    _ACTION_PARAM_SCHEMAS[kind] = schema_relpath
+def register_action_param_schema(
+    kind: str, schema_relpath: str, *, package: str = "agent_sandbox"
+) -> None:
+    _ACTION_PARAM_SCHEMAS[kind] = (schema_relpath, package)
 
 
 def has_assertion(kind: str) -> bool:
@@ -86,12 +90,12 @@ def get_agent_canonical(agent_id: str) -> str:
     return _AGENT_CANONICAL.get(agent_id, agent_id)
 
 
-def get_assertion_param_schema(kind: str) -> str:
-    return _ASSERTION_PARAM_SCHEMAS.get(kind, "")
+def get_assertion_param_schema(kind: str) -> tuple[str, str]:
+    return _ASSERTION_PARAM_SCHEMAS.get(kind, ("", "agent_sandbox"))
 
 
-def get_action_param_schema(kind: str) -> str:
-    return _ACTION_PARAM_SCHEMAS.get(kind, "")
+def get_action_param_schema(kind: str) -> tuple[str, str]:
+    return _ACTION_PARAM_SCHEMAS.get(kind, ("", "agent_sandbox"))
 
 
 def list_assertion_kinds() -> list[str]:

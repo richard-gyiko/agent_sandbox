@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-sandbox.dev/schema/v3/assertions/drive.has_hash.params.schema.json",
+  "type": "object",
+  "required": ["sha256"],
+  "properties": {
+    "sha256": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

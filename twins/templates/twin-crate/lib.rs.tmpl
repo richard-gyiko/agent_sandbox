@@ -1,0 +1,79 @@
+//! Digital twin service for {{name}}.
+
+use axum::Router;
+use serde::{Deserialize, Serialize};
+use twin_service::{
+    AssertionResult, SharedTwinState, TimelineActionResult, TwinError, TwinService,
+};
+
+mod generated;
+use generated::*;
+
+// ---------------------------------------------------------------------------
+// Domain types
+// ---------------------------------------------------------------------------
+
+/// Placeholder domain entity — replace with your own types.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct {{Name}}Entity {
+    pub id: String,
+    pub name: String,
+}
+
+// ---------------------------------------------------------------------------
+// Service
+// ---------------------------------------------------------------------------
+
+#[derive(Default, Serialize, Deserialize)]
+pub struct {{Name}}TwinService {
+    // TODO: add domain state fields here
+}
+
+impl TwinService for {{Name}}TwinService {
+    fn routes(shared: SharedTwinState<Self>) -> Router {
+        // TODO: register domain-specific HTTP routes
+        Router::new().with_state(shared)
+    }
+
+    fn seed_from_scenario(&mut self, _initial_state: &serde_json::Value) -> Result<(), TwinError> {
+        // TODO: populate state from the scenario's initial_state section
+        todo!("seed {{name}} state from scenario")
+    }
+
+    fn evaluate_assertion(&self, _check: &serde_json::Value) -> Result<AssertionResult, TwinError> {
+        // TODO: implement domain-specific assertion checks
+        todo!("evaluate {{name}} assertion")
+    }
+
+    fn execute_timeline_action(
+        &mut self,
+        _action: &serde_json::Value,
+        _actor_id: &str,
+    ) -> Result<TimelineActionResult, TwinError> {
+        // TODO: deserialise and execute a timeline action, return endpoint + response
+        todo!("execute {{name}} timeline action")
+    }
+
+    // The following methods have sensible defaults provided by the trait:
+    //   service_snapshot  — serialises via serde
+    //   service_restore   — deserialises via serde
+    //   validate_scenario — returns no errors/warnings
+    //   reset             — replaces self with Self::default()
+    // Override them here if you need custom behaviour.
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_service_can_be_created() {
+        let _service = {{Name}}TwinService::default();
+    }
+
+    // TODO: add domain-specific unit tests
+}

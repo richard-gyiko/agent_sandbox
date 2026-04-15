@@ -1,0 +1,18 @@
+[package]
+name = "twin-drive"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+axum.workspace = true
+base64.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_path_to_error.workspace = true
+tokio.workspace = true
+twin-service = { path = "../twin-service" }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+twin-kernel = { path = "../twin-kernel" }

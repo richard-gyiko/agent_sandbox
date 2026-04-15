@@ -13,20 +13,27 @@ from referencing import Registry, Resource
 from agent_sandbox.env import getenv
 
 
-def read_schema_text(relpath: str) -> str:
+def read_schema_text(relpath: str, *, package: str = "agent_sandbox") -> str:
     configured_dir = (getenv("AGENT_SANDBOX_SCHEMA_DIR", default="") or "").strip()
     if configured_dir:
         configured_path = Path(configured_dir) / relpath
         if configured_path.exists():
             return configured_path.read_text(encoding="utf-8")
 
-    package_resource = (
-        pkg_resources.files("agent_sandbox")
-        .joinpath("resources")
-        .joinpath("v3")
-        .joinpath("schema")
-        .joinpath(relpath)
-    )
+    if package == "agent_sandbox":
+        resource_root = (
+            pkg_resources.files("agent_sandbox")
+            .joinpath("resources")
+            .joinpath("v3")
+            .joinpath("schema")
+        )
+    else:
+        resource_root = (
+            pkg_resources.files(package)
+            .joinpath("resources")
+            .joinpath("schema")
+        )
+    package_resource = resource_root.joinpath(relpath)
     if package_resource.is_file():
         return package_resource.read_text(encoding="utf-8")
 
@@ -35,8 +42,8 @@ def read_schema_text(relpath: str) -> str:
     return (fallback_root / "schema" / relpath).read_text(encoding="utf-8")
 
 
-def load_schema_json(relpath: str) -> dict[str, Any]:
-    return json.loads(read_schema_text(relpath))
+def load_schema_json(relpath: str, *, package: str = "agent_sandbox") -> dict[str, Any]:
+    return json.loads(read_schema_text(relpath, package=package))
 
 
 def validate_kind_schema(kind: str, data: dict[str, Any]) -> None:

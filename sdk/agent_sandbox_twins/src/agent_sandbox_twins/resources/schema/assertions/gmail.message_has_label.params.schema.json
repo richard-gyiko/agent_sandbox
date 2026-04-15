@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-sandbox.dev/schema/v3/assertions/gmail.message_has_label.params.schema.json",
+  "type": "object",
+  "required": ["message_id", "label"],
+  "properties": {
+    "message_id": { "type": "string", "minLength": 1 },
+    "label": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

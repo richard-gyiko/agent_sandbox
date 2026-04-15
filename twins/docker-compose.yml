@@ -1,0 +1,42 @@
+services:
+  twin-drive:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.drive
+    ports: ["${TWIN_DRIVE_PORT:-8080}:8080"]
+    volumes:
+      - ./runs/drive:/data/runs
+      - ./scenarios/drive:/data/scenarios:ro
+    environment:
+      TWIN_HOST: "0.0.0.0"
+      TWIN_PORT: "8080"
+      TWIN_SCENARIOS_DIR: "/data/scenarios"
+      TWIN_RUNS_DIR: "/data/runs"
+      TWIN_LOG_LEVEL: "info"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  twin-gmail:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.gmail
+    ports: ["${TWIN_GMAIL_PORT:-8081}:8080"]
+    volumes:
+      - ./runs/gmail:/data/runs
+      - ./scenarios/gmail:/data/scenarios:ro
+    environment:
+      TWIN_HOST: "0.0.0.0"
+      TWIN_PORT: "8080"
+      TWIN_SCENARIOS_DIR: "/data/scenarios"
+      TWIN_RUNS_DIR: "/data/runs"
+      TWIN_LOG_LEVEL: "info"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s

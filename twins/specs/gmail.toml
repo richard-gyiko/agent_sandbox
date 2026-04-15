@@ -1,0 +1,573 @@
+# Gmail twin spec — describes the V1 API surface for code generation.
+#
+# Generated code covers: response types, body/query types, route handlers,
+# routes wiring, and error helpers.
+#
+# Re-generate with:
+#   twin-cli generate --spec specs/gmail.toml --output crates/twin-gmail/src/generated.rs
+
+[twin]
+name = "gmail"
+api_version = "1"
+base_path = "/gmail/v1/users/me"
+state_type = "GmailTwinService"
+request_type = "GmailRequest"
+response_type = "GmailResponse"
+
+# ============================================================================
+# Response types (Serialize) — V1 API shapes returned to clients
+# ============================================================================
+
+[[response_types]]
+name = "V1Message"
+fields = [
+    { name = "id", type = "String" },
+    { name = "thread_id", type = "String" },
+    { name = "label_ids", type = "Vec<String>" },
+    { name = "snippet", type = "String" },
+    { name = "history_id", type = "String" },
+    { name = "internal_date", type = "String" },
+    { name = "size_estimate", type = "u64" },
+    { name = "payload", type = "Option<V1Payload>", skip_none = true },
+]
+
+[[response_types]]
+name = "V1Payload"
+fields = [
+    { name = "mime_type", type = "String" },
+    { name = "headers", type = "Vec<V1Header>" },
+    { name = "body", type = "V1Body" },
+    { name = "parts", type = "Vec<V1Part>", skip_empty = true },
+]
+
+[[response_types]]
+name = "V1Header"
+camel_case = false
+fields = [
+    { name = "name", type = "String" },
+    { name = "value", type = "String" },
+]
+
+[[response_types]]
+name = "V1Body"
+fields = [
+    { name = "size", type = "u64" },
+    { name = "data", type = "Option<String>", skip_none = true },
+    { name = "attachment_id", type = "Option<String>", skip_none = true },
+]
+
+[[response_types]]
+name = "V1Part"
+fields = [
+    { name = "part_id", type = "String" },
+    { name = "mime_type", type = "String" },
+    { name = "filename", type = "Option<String>", skip_none = true },
+    { name = "headers", type = "Vec<V1Header>" },
+    { name = "body", type = "V1Body" },
+]
+
+[[response_types]]
+name = "V1MessageList"
+fields = [
+    { name = "messages", type = "Vec<V1MessageRef>" },
+    { name = "next_page_token", type = "Option<String>", skip_none = true },
+    { name = "result_size_estimate", type = "u32" },
+]
+
+[[response_types]]
+name = "V1MessageRef"
+fields = [
+    { name = "id", type = "String" },
+    { name = "thread_id", type = "String" },
+]
+
+[[response_types]]
+name = "V1Thread"
+fields = [
+    { name = "id", type = "String" },
+    { name = "history_id", type = "String" },
+    { name = "snippet", type = "String" },
+    { name = "messages", type = "Option<Vec<V1Message>>", skip_none = true },
+]
+
+[[response_types]]
+name = "V1ThreadList"
+fields = [
+    { name = "threads", type = "Vec<V1ThreadRef>" },
+    { name = "next_page_token", type = "Option<String>", skip_none = true },
+    { name = "result_size_estimate", type = "u32" },
+]
+
+[[response_types]]
+name = "V1ThreadRef"
+fields = [
+    { name = "id", type = "String" },
+    { name = "snippet", type = "String" },
+    { name = "history_id", type = "String" },
+]
+
+[[response_types]]
+name = "V1Label"
+fields = [
+    { name = "id", type = "String" },
+    { name = "name", type = "String" },
+    { name = "label_type", type = "String", serde_rename = "type" },
+    { name = "message_list_visibility", type = "String" },
+    { name = "label_list_visibility", type = "String" },
+    { name = "messages_total", type = "u64" },
+    { name = "messages_unread", type = "u64" },
+    { name = "threads_total", type = "u64" },
+    { name = "threads_unread", type = "u64" },
+    { name = "color", type = "Option<V1LabelColor>", skip_none = true },
+]
+
+[[response_types]]
+name = "V1LabelColor"
+fields = [
+    { name = "text_color", type = "String" },
+    { name = "background_color", type = "String" },
+]
+
+[[response_types]]
+name = "V1LabelList"
+fields = [
+    { name = "labels", type = "Vec<V1Label>" },
+]
+
+[[response_types]]
+name = "V1Attachment"
+fields = [
+    { name = "attachment_id", type = "String" },
+    { name = "size", type = "u64" },
+    { name = "data", type = "String", doc = "Base64url-encoded data (matching Gmail API convention)." },
+]
+
+[[response_types]]
+name = "V1Profile"
+fields = [
+    { name = "email_address", type = "String" },
+    { name = "messages_total", type = "u64" },
+    { name = "threads_total", type = "u64" },
+    { name = "history_id", type = "String" },
+]
+
+# ============================================================================
+# Body / query types (Deserialize) — HTTP request shapes from clients
+# ============================================================================
+
+[[body_types]]
+name = "NativeSendBody"
+camel_case = false
+fields = [
+    { name = "to", type = "Vec<String>" },
+    { name = "subject", type = "String" },
+    { name = "body", type = "String" },
+    { name = "thread_id", type = "Option<String>", default = "default" },
+]
+
+[[body_types]]
+name = "NativeModifyLabelsBody"
+camel_case = false
+fields = [
+    { name = "add_label_ids", type = "Vec<String>", default = "default" },
+    { name = "remove_label_ids", type = "Vec<String>", default = "default" },
+]
+
+[[body_types]]
+name = "NativeCreateLabelBody"
+camel_case = false
+fields = [
+    { name = "name", type = "String" },
+]
+
+[[body_types]]
+name = "V1ListQuery"
+doc = "Query parameters for list messages/threads endpoints."
+fields = [
+    { name = "label_ids", type = "Option<String>", default = "default", doc = "Comma-separated label IDs." },
+    { name = "max_results", type = "u32", default = "100" },
+    { name = "page_token", type = "Option<String>", default = "default" },
+]
+
+[[body_types]]
+name = "V1GetMessageQuery"
+doc = "Query parameters for get message/thread endpoints."
+fields = [
+    { name = "format", type = "String", default = "\"full\".to_string()" },
+]
+
+[[body_types]]
+name = "V1SendBody"
+allow_dead_code = true
+fields = [
+    { name = "raw", type = "Option<String>", doc = "We accept simplified JSON instead of raw RFC 2822." },
+    { name = "to", type = "Vec<String>", default = "default" },
+    { name = "cc", type = "Vec<String>", default = "default" },
+    { name = "bcc", type = "Vec<String>", default = "default" },
+    { name = "subject", type = "Option<String>", default = "default" },
+    { name = "body", type = "Option<String>", default = "default" },
+    { name = "thread_id", type = "Option<String>", default = "default" },
+]
+
+[[body_types]]
+name = "V1ModifyBody"
+fields = [
+    { name = "add_label_ids", type = "Vec<String>", default = "default" },
+    { name = "remove_label_ids", type = "Vec<String>", default = "default" },
+]
+
+[[body_types]]
+name = "V1CreateLabelBody"
+allow_dead_code = true
+fields = [
+    { name = "name", type = "String" },
+    { name = "message_list_visibility", type = "Option<String>", default = "default" },
+    { name = "label_list_visibility", type = "Option<String>", default = "default" },
+    { name = "color", type = "Option<V1LabelColorInput>", default = "default" },
+]
+
+[[body_types]]
+name = "V1UpdateLabelBody"
+fields = [
+    { name = "name", type = "Option<String>", default = "default" },
+    { name = "message_list_visibility", type = "Option<String>", default = "default" },
+    { name = "label_list_visibility", type = "Option<String>", default = "default" },
+]
+
+[[body_types]]
+name = "V1LabelColorInput"
+allow_dead_code = true
+fields = [
+    { name = "text_color", type = "String" },
+    { name = "background_color", type = "String" },
+]
+
+[[body_types]]
+name = "V1InsertBody"
+fields = [
+    { name = "thread_id", type = "Option<String>", default = "default", doc = "Simplified insert (not raw RFC 2822)." },
+    { name = "label_ids", type = "Vec<String>", default = "default" },
+    { name = "from", type = "String" },
+    { name = "to", type = "Vec<String>" },
+    { name = "cc", type = "Option<Vec<String>>", default = "default" },
+    { name = "bcc", type = "Option<Vec<String>>", default = "default" },
+    { name = "subject", type = "String" },
+    { name = "body", type = "Option<String>", default = "default" },
+    { name = "body_html", type = "Option<String>", default = "default" },
+    { name = "internal_date", type = "Option<String>", default = "default" },
+]
+
+# ============================================================================
+# Resources and operations — V1 route handlers
+# ============================================================================
+#
+# Note: many Gmail handlers have complex response_conversion logic that builds
+# V1 types from domain types using helper functions like `gmail_message_to_v1`.
+# These are declared as response_conversion expressions and the actual helper
+# functions must be hand-written in the twin crate.
+#
+# Operations with custom field_mappings or complex request construction
+# (e.g. list_messages parsing label_ids from comma-separated query param,
+# send_message unwrapping optionals, insert_message building a SeedMessage)
+# cannot be fully generated and are marked with comments.
+# For Phase 3A we focus on struct generation; route handler generation is Phase 3B.
+
+[[resources]]
+name = "Message"
+
+[[resources.operations]]
+name = "list_messages"
+method = "GET"
+path = "/messages"
+handler = "route_v1_list_messages"
+request_variant = "ListMessages"
+response_variant = "MessageList"
+success_status = 200
+query_params = "V1ListQuery"
+response_conversion = "list_messages_to_v1(messages, next_page_token, result_size_estimate)"
+response_destructure = "messages, next_page_token, result_size_estimate"
+
+[[resources.operations]]
+name = "get_message"
+method = "GET"
+path = "/messages/{id}"
+handler = "route_v1_get_message"
+request_variant = "GetMessage"
+response_variant = "Message"
+success_status = 200
+query_params = "V1GetMessageQuery"
+path_params = [{ name = "id", type = "String", rename = "message_id" }]
+response_conversion = "gmail_message_to_v1(&data, format)"
+
+[[resources.operations]]
+name = "send_message"
+method = "POST"
+path = "/messages/send"
+handler = "route_v1_send_message"
+request_variant = "SendMessage"
+response_variant = "Message"
+success_status = 200
+body_type = "V1SendBody"
+response_conversion = "gmail_message_to_v1(&data, MessageFormat::Full)"
+
+[[resources.operations]]
+name = "insert_message"
+method = "POST"
+path = "/messages"
+handler = "route_v1_insert_message"
+request_variant = "InsertMessage"
+response_variant = "Message"
+success_status = 200
+body_type = "V1InsertBody"
+response_conversion = "gmail_message_to_v1(&data, MessageFormat::Full)"
+
+[[resources.operations]]
+name = "modify_message"
+method = "POST"
+path = "/messages/{id}/modify"
+handler = "route_v1_modify_message"
+request_variant = "ModifyMessage"
+response_variant = "Message"
+success_status = 200
+body_type = "V1ModifyBody"
+path_params = [{ name = "id", type = "String", rename = "message_id" }]
+field_mappings = [
+    "add_label_ids: body.add_label_ids,",
+    "remove_label_ids: body.remove_label_ids,",
+]
+response_conversion = "gmail_message_to_v1(&data, MessageFormat::Full)"
+
+[[resources.operations]]
+name = "trash_message"
+method = "POST"
+path = "/messages/{id}/trash"
+handler = "route_v1_trash_message"
+request_variant = "TrashMessage"
+response_variant = "Message"
+success_status = 200
+path_params = [{ name = "id", type = "String", rename = "message_id" }]
+response_conversion = "gmail_message_to_v1(&data, MessageFormat::Full)"
+
+[[resources.operations]]
+name = "untrash_message"
+method = "POST"
+path = "/messages/{id}/untrash"
+handler = "route_v1_untrash_message"
+request_variant = "UntrashMessage"
+response_variant = "Message"
+success_status = 200
+path_params = [{ name = "id", type = "String", rename = "message_id" }]
+response_conversion = "gmail_message_to_v1(&data, MessageFormat::Full)"
+
+[[resources.operations]]
+name = "delete_message"
+method = "DELETE"
+path = "/messages/{id}"
+handler = "route_v1_delete_message"
+request_variant = "DeleteMessage"
+response_variant = "Deleted"
+success_status = 204
+path_params = [{ name = "id", type = "String", rename = "message_id" }]
+
+# --- Threads ---
+
+[[resources]]
+name = "Thread"
+
+[[resources.operations]]
+name = "list_threads"
+method = "GET"
+path = "/threads"
+handler = "route_v1_list_threads"
+request_variant = "ListThreads"
+response_variant = "ThreadList"
+success_status = 200
+query_params = "V1ListQuery"
+response_conversion = "list_threads_to_v1(threads, next_page_token, result_size_estimate)"
+response_destructure = "threads, next_page_token, result_size_estimate"
+
+[[resources.operations]]
+name = "get_thread"
+method = "GET"
+path = "/threads/{id}"
+handler = "route_v1_get_thread"
+request_variant = "GetThread"
+response_variant = "Thread"
+success_status = 200
+query_params = "V1GetMessageQuery"
+path_params = [{ name = "id", type = "String", rename = "thread_id" }]
+response_conversion = "thread_to_v1(thread, messages, format)"
+response_destructure = "thread, messages"
+
+[[resources.operations]]
+name = "modify_thread"
+method = "POST"
+path = "/threads/{id}/modify"
+handler = "route_v1_modify_thread"
+request_variant = "ModifyThread"
+response_variant = "Thread"
+success_status = 200
+body_type = "V1ModifyBody"
+path_params = [{ name = "id", type = "String", rename = "thread_id" }]
+field_mappings = [
+    "add_label_ids: body.add_label_ids,",
+    "remove_label_ids: body.remove_label_ids,",
+]
+response_conversion = "thread_to_v1(thread, messages, MessageFormat::Full)"
+response_destructure = "thread, messages"
+
+[[resources.operations]]
+name = "trash_thread"
+method = "POST"
+path = "/threads/{id}/trash"
+handler = "route_v1_trash_thread"
+request_variant = "TrashThread"
+response_variant = "Thread"
+success_status = 200
+path_params = [{ name = "id", type = "String", rename = "thread_id" }]
+response_conversion = "thread_to_v1(thread, messages, MessageFormat::Full)"
+response_destructure = "thread, messages"
+
+[[resources.operations]]
+name = "untrash_thread"
+method = "POST"
+path = "/threads/{id}/untrash"
+handler = "route_v1_untrash_thread"
+request_variant = "UntrashThread"
+response_variant = "Thread"
+success_status = 200
+path_params = [{ name = "id", type = "String", rename = "thread_id" }]
+response_conversion = "thread_to_v1(thread, messages, MessageFormat::Full)"
+response_destructure = "thread, messages"
+
+[[resources.operations]]
+name = "delete_thread"
+method = "DELETE"
+path = "/threads/{id}"
+handler = "route_v1_delete_thread"
+request_variant = "DeleteThread"
+response_variant = "Deleted"
+success_status = 204
+path_params = [{ name = "id", type = "String", rename = "thread_id" }]
+
+# --- Labels ---
+
+[[resources]]
+name = "Label"
+
+[[resources.operations]]
+name = "list_labels"
+method = "GET"
+path = "/labels"
+handler = "route_v1_list_labels"
+request_variant = "ListLabels"
+response_variant = "LabelList"
+success_status = 200
+response_conversion = "label_list_to_v1(&data, &rt.service)"
+
+[[resources.operations]]
+name = "get_label"
+method = "GET"
+path = "/labels/{id}"
+handler = "route_v1_get_label"
+request_variant = "GetLabel"
+response_variant = "Label"
+success_status = 200
+path_params = [{ name = "id", type = "String", rename = "label_id" }]
+response_conversion = "gmail_label_to_v1(&data, &rt.service)"
+
+[[resources.operations]]
+name = "create_label"
+method = "POST"
+path = "/labels"
+handler = "route_v1_create_label"
+request_variant = "CreateLabel"
+response_variant = "Label"
+success_status = 200
+body_type = "V1CreateLabelBody"
+field_mappings = [
+    "name: body.name,",
+    "message_list_visibility: body.message_list_visibility,",
+    "label_list_visibility: body.label_list_visibility,",
+]
+response_conversion = "gmail_label_to_v1(&data, &rt.service)"
+
+[[resources.operations]]
+name = "update_label"
+method = "PUT"
+path = "/labels/{id}"
+handler = "route_v1_update_label"
+request_variant = "UpdateLabel"
+response_variant = "Label"
+success_status = 200
+body_type = "V1UpdateLabelBody"
+path_params = [{ name = "id", type = "String", rename = "label_id" }]
+field_mappings = [
+    "name: body.name,",
+    "message_list_visibility: body.message_list_visibility,",
+    "label_list_visibility: body.label_list_visibility,",
+]
+response_conversion = "gmail_label_to_v1(&data, &rt.service)"
+
+[[resources.operations]]
+name = "patch_label"
+method = "PATCH"
+path = "/labels/{id}"
+handler = "route_v1_patch_label"
+request_variant = "UpdateLabel"
+response_variant = "Label"
+success_status = 200
+body_type = "V1UpdateLabelBody"
+path_params = [{ name = "id", type = "String", rename = "label_id" }]
+field_mappings = [
+    "name: body.name,",
+    "message_list_visibility: body.message_list_visibility,",
+    "label_list_visibility: body.label_list_visibility,",
+]
+response_conversion = "gmail_label_to_v1(&data, &rt.service)"
+
+[[resources.operations]]
+name = "delete_label"
+method = "DELETE"
+path = "/labels/{id}"
+handler = "route_v1_delete_label"
+request_variant = "DeleteLabel"
+response_variant = "Deleted"
+success_status = 204
+path_params = [{ name = "id", type = "String", rename = "label_id" }]
+
+# --- Attachments ---
+
+[[resources]]
+name = "Attachment"
+
+[[resources.operations]]
+name = "get_attachment"
+method = "GET"
+path = "/messages/{message_id}/attachments/{id}"
+handler = "route_v1_get_attachment"
+request_variant = "GetAttachment"
+response_variant = "Attachment"
+success_status = 200
+path_params = [
+    { name = "message_id", type = "String" },
+    { name = "id", type = "String", rename = "attachment_id" },
+]
+response_conversion = "attachment_to_v1(id, data, size)"
+response_destructure = "data, size"
+
+# --- Profile ---
+
+[[resources]]
+name = "Profile"
+
+[[resources.operations]]
+name = "get_profile"
+method = "GET"
+path = "/profile"
+handler = "route_v1_get_profile"
+request_variant = "GetProfile"
+response_variant = "Profile"
+success_status = 200
+response_conversion = "profile_to_v1(email, messages_total, threads_total, history_id)"
+response_destructure = "email, messages_total, threads_total, history_id"

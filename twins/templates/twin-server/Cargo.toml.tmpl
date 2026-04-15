@@ -1,0 +1,18 @@
+[package]
+name = "twin-{{name}}-server"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+axum.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+twin-{{name}} = { path = "../../crates/twin-{{name}}" }
+twin-kernel = { path = "../../crates/twin-kernel" }
+twin-server-core = { path = "../../crates/twin-server-core" }
+
+[dev-dependencies]
+serde_json.workspace = true
+tower = "0.5"

@@ -4,28 +4,17 @@ This file gives coding agents a fast orientation to the repo.
 
 ## What This Project Is
 
-`agent_sandbox` is a generic sandbox engine for running and testing LLM-powered workflows and agents against digital twins using declarative YAML specs.
+A monorepo containing a test harness for LLM-powered agents, with digital twin servers for Gmail and Drive.
 
-The engine is **service-agnostic** — it orchestrates twin lifecycle (reset, seed, execute, snapshot, assert) through a `TwinProvider` plugin interface. Gmail and Drive support is provided by the separate [`agent-sandbox-twins`](https://github.com/richard-gyiko/digital-twins/tree/main/sdk/python) plugin package in the digital-twins repo.
+## Repo Structure
 
-It owns:
-- the `agent-sandbox` CLI
-- the `TwinProvider` protocol and registry (`twin_provider.py`)
-- DSL v3 spec loading and validation
-- execution runtime and target dispatch
-- adapter protocol (`lab.adapter.v1`)
-- plugin system for registering providers, assertions, and runners
-- engine-level assertions (workflow, trace) and actions
-- packaged schema/OpenAPI resources
-- generic sandbox documentation
-
-It does **not** own:
-- Gmail/Drive twin providers, assertions, or schemas (those live in `agent-sandbox-twins`)
-- Twin server implementations (Rust, in `digital-twins`)
-- Runnable spec content (environments, scenarios, runs — in `digital-twins`)
+- **Engine** (`src/agent_sandbox/`) — Python. Generic sandbox orchestration via `TwinProvider` plugins.
+- **Twin plugin** (`sdk/agent_sandbox_twins/`) — Python. Gmail/Drive providers, assertions, snapshot reshaping.
+- **Twin servers** (`twins/`) — Rust. Stateful in-memory Gmail and Drive API replicas.
 
 ## Main Code Areas
 
+### Engine (Python)
 - `src/agent_sandbox/twin_provider.py` — TwinProvider protocol and registry
 - `src/agent_sandbox/runner.py` — orchestration, twin lifecycle, execution dispatch
 - `src/agent_sandbox/cli.py` — CLI commands
@@ -33,39 +22,50 @@ It does **not** own:
 - `src/agent_sandbox/assertion_handlers.py` — engine-level assertions (workflow.*, trace.*)
 - `src/agent_sandbox/execution_registry.py` — global handler registries
 - `src/agent_sandbox/plugins.py` — plugin discovery and loading
-- `src/agent_sandbox/target_sdk.py` — runtime config and event hooks for target code
-- `src/agent_sandbox/schema.py` — JSON schema loading and validation
+- `src/agent_sandbox/schema.py` — JSON schema loading (supports multi-package resolution)
 - `src/agent_sandbox/resources/v3/` — packaged schemas and OpenAPI specs
 - `docs/agent-sandbox/` — architecture, contracts, safety model
-- `tests/` — unit and contract tests
+- `tests/` — engine unit and contract tests
 
-## Source Of Truth Rules
+### Twin Plugin (Python)
+- `sdk/agent_sandbox_twins/src/agent_sandbox_twins/` — providers and assertions
+- `sdk/agent_sandbox_twins/src/agent_sandbox_twins/resources/` — assertion param schemas
 
-- Schemas and OpenAPI under `src/agent_sandbox/resources/v3/` are canonical for engine-level specs.
-- Gmail/Drive assertion schemas live in the `agent-sandbox-twins` package, not here.
-- Generic sandbox docs belong in `docs/agent-sandbox/`.
-- Runnable environments, scenarios, and runs belong in the [`digital-twins`](https://github.com/richard-gyiko/digital-twins) repo, not here.
-- Product-specific target registration belongs in consuming repos, not here.
+### Twin Servers (Rust)
+- `twins/crates/` — library crates (kernel, service, drive, gmail, etc.)
+- `twins/apps/` — server binaries and CLI
+- `twins/docker/` — Dockerfiles
+- `twins/specs/` — TOML API specs for code generation
+- `twins/scenarios/` — test scenarios
+- `twins/ARCHITECTURE.md` — layered design docs
 
 ## Common Commands
 
 ```bash
+# Python engine
 uv sync --all-extras
 uv run pytest
 uv run ruff check .
+
+# Twin servers
+cd twins && cargo test --workspace
+cd twins && docker compose up -d
+
+# Full stack
+export AGENT_SANDBOX_PLUGIN_MODULES=agent_sandbox_twins
 uv run agent-sandbox doctor --json
 ```
 
-## Runtime Notes
+## Source Of Truth Rules
 
-- The CLI discovers specs from `AGENT_SANDBOX_V3_DIR`.
-- In a typical local workspace layout that should point at the `v3` directory of the [`digital-twins`](https://github.com/richard-gyiko/digital-twins) repo.
-- Twin providers must be registered before execution. Install `agent-sandbox-twins` or set `AGENT_SANDBOX_PLUGIN_MODULES=agent_sandbox_twins`.
-- Keep the package import name `agent_sandbox` stable.
+- Engine schemas under `src/agent_sandbox/resources/v3/` are canonical for engine-level specs.
+- Gmail/Drive assertion schemas live in `sdk/agent_sandbox_twins/`, not in the engine.
+- Twin server code lives under `twins/`. Rust workspace commands run from `twins/`.
+- Do not add Gmail/Drive-specific code to the engine — that belongs in the twin plugin.
+- Do not introduce direct imports between the engine and twin server code.
 
 ## Expected Quality Bar
 
 - Keep the engine independent from specific twin implementations.
-- Do not add Gmail/Drive-specific code — that belongs in the twin plugin.
-- Do not introduce direct imports from consuming repos.
-- Prefer updating `README.md` and this file when the repo structure or workflow changes materially.
+- Keep `twins/` self-contained — Cargo and Docker commands work from within it.
+- Prefer updating `README.md` and this file when structure changes materially.

@@ -18,9 +18,13 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
 ]
+twins = [
+    { name = "agent-sandbox-twins" },
+]
 
 [package.metadata]
 requires-dist = [
+    { name = "agent-sandbox-twins", marker = "extra == 'twins'", editable = "sdk/agent_sandbox_twins" },
     { name = "jsonschema", specifier = ">=4.25.1" },
     { name = "opentelemetry-api", specifier = ">=1.27.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
@@ -28,7 +32,18 @@ requires-dist = [
     { name = "referencing", specifier = ">=0.36.2" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8.0" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["dev", "twins"]
+
+[[package]]
+name = "agent-sandbox-twins"
+version = "0.1.0"
+source = { editable = "sdk/agent_sandbox_twins" }
+dependencies = [
+    { name = "agent-sandbox" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "agent-sandbox", specifier = ">=0.1.0" }]
 
 [[package]]
 name = "attrs"

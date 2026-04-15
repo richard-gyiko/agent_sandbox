@@ -1,0 +1,148 @@
+# Google Drive twin spec — describes the V3 API surface for code generation.
+#
+# Generated code covers: response types and body/query types.
+# Route handlers remain hand-written (complex domain logic).
+#
+# Re-generate with:
+#   twin-cli generate --spec specs/drive.toml --output crates/twin-drive/src/generated.rs
+
+[twin]
+name = "drive"
+api_version = "3"
+base_path = "/drive/v3"
+state_type = "DriveTwinService"
+request_type = "DriveRequest"
+response_type = "DriveResponse"
+
+# ============================================================================
+# Response types (Serialize) — V3 API shapes returned to clients
+# ============================================================================
+
+[[response_types]]
+name = "V3File"
+doc = "Google Drive v3 file resource representation."
+fields = [
+    { name = "kind", type = "String" },
+    { name = "id", type = "String" },
+    { name = "name", type = "String" },
+    { name = "mime_type", type = "String" },
+    { name = "parents", type = "Vec<String>" },
+    { name = "size", type = "Option<String>", skip_none = true },
+    { name = "permissions", type = "Option<Vec<V3Permission>>", skip_none = true },
+]
+
+[[response_types]]
+name = "V3Permission"
+fields = [
+    { name = "id", type = "String" },
+    { name = "permission_type", type = "String", serde_rename = "type" },
+    { name = "role", type = "String" },
+    { name = "email_address", type = "String" },
+]
+
+[[response_types]]
+name = "V3FileList"
+fields = [
+    { name = "kind", type = "String" },
+    { name = "files", type = "Vec<V3File>" },
+]
+
+# ============================================================================
+# Body / query types (Deserialize) — HTTP request shapes from clients
+# ============================================================================
+
+# --- Native route types (not camelCase) ---
+
+[[body_types]]
+name = "CreateItemBody"
+camel_case = false
+fields = [
+    { name = "actor_id", type = "String" },
+    { name = "parent_id", type = "String" },
+    { name = "name", type = "String" },
+]
+
+[[body_types]]
+name = "ListChildrenQuery"
+camel_case = false
+fields = [
+    { name = "actor_id", type = "String" },
+]
+
+[[body_types]]
+name = "SetPermissionBody"
+camel_case = false
+fields = [
+    { name = "actor_id", type = "String" },
+    { name = "target_actor_id", type = "String" },
+    { name = "role", type = "String" },
+]
+
+[[body_types]]
+name = "MoveItemBody"
+camel_case = false
+fields = [
+    { name = "actor_id", type = "String" },
+    { name = "new_parent_id", type = "String" },
+]
+
+[[body_types]]
+name = "ActorQuery"
+camel_case = false
+fields = [
+    { name = "actor_id", type = "String" },
+]
+
+# --- V3 mimicry route types (camelCase) ---
+
+[[body_types]]
+name = "V3CreateFileBody"
+fields = [
+    { name = "name", type = "String" },
+    { name = "mime_type", type = "Option<String>" },
+    { name = "parents", type = "Option<Vec<String>>" },
+]
+
+[[body_types]]
+name = "V3UpdateFileBody"
+fields = [
+    { name = "name", type = "Option<String>" },
+]
+
+[[body_types]]
+name = "V3UpdateFileQuery"
+fields = [
+    { name = "add_parents", type = "Option<String>" },
+    { name = "remove_parents", type = "Option<String>", allow_dead_code = true, doc = "Accepted but not acted on — the twin uses single-parent semantics, so setting `add_parents` implicitly replaces the existing parent." },
+]
+
+[[body_types]]
+name = "V3ListFilesQuery"
+fields = [
+    { name = "q", type = "Option<String>" },
+    { name = "fields", type = "Option<String>", allow_dead_code = true, doc = "Accepted but not used — the twin always returns all fields.  Real Drive uses this for partial-response field masks." },
+    { name = "page_size", type = "Option<usize>" },
+]
+
+[[body_types]]
+name = "V3CreatePermissionBody"
+fields = [
+    { name = "role", type = "String" },
+    { name = "email_address", type = "Option<String>" },
+    { name = "actor_id", type = "Option<String>", doc = "Twin extension: direct actor_id" },
+]
+
+[[body_types]]
+name = "V3GetFileQuery"
+fields = [
+    { name = "alt", type = "Option<String>" },
+]
+
+[[body_types]]
+name = "V3UploadQuery"
+fields = [
+    { name = "upload_type", type = "Option<String>", allow_dead_code = true, doc = "Accepted but not enforced — the twin always treats uploads as simple media." },
+    { name = "name", type = "Option<String>" },
+    { name = "mime_type", type = "Option<String>" },
+    { name = "parents", type = "Option<String>" },
+]

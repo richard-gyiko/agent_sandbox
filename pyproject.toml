@@ -21,6 +21,12 @@ dev = [
     "pytest>=8.3.0",
     "ruff>=0.8.0",
 ]
+twins = [
+    "agent-sandbox-twins",
+]
+
+[tool.uv.sources]
+agent-sandbox-twins = { path = "sdk/agent_sandbox_twins", editable = true }
 
 [build-system]
 requires = ["hatchling"]

@@ -4,6 +4,19 @@ A test harness for LLM-powered agents that interact with external services via d
 
 You write declarative YAML specs that define initial state, run your agent, then assert on what it did.
 
+## Repository Layout
+
+This is a monorepo containing the full stack:
+
+```
+src/agent_sandbox/     Python engine — CLI, DSL loader, runtime, adapters, plugin system
+sdk/agent_sandbox_twins/  Gmail/Drive twin providers and assertions (Python plugin)
+twins/                 Rust twin servers — Gmail and Drive API implementations
+  crates/              twin-kernel, twin-service, twin-drive, twin-gmail, etc.
+  apps/                twin-drive-server, twin-gmail-server, twin-cli
+  docker/              Dockerfiles for twin servers
+```
+
 ## Why
 
 Testing an AI agent that reads emails, creates files, or manages labels is hard:
@@ -26,68 +39,44 @@ agent-sandbox run execute my_agent_test --assert-after
 
 Your agent connects to the twins via standard API-compatible HTTP endpoints. It doesn't need to know it's in a sandbox.
 
+## Quick Start
+
+```bash
+# Install engine + plugin
+uv sync --all-extras
+pip install -e sdk/agent_sandbox_twins
+
+# Start twin servers
+cd twins && docker compose up -d && cd ..
+
+# Check that everything is wired up
+export AGENT_SANDBOX_PLUGIN_MODULES=agent_sandbox_twins
+uv run agent-sandbox doctor --json
+```
+
 ## Architecture
 
 The engine is **service-agnostic**. Twin backends are pluggable through the `TwinProvider` protocol — the engine handles orchestration (reset, seed, execute, snapshot, assert) while plugins provide the service-specific logic.
 
-**Gmail and Drive** support is provided by the [`agent-sandbox-twins`](https://github.com/richard-gyiko/digital-twins/tree/main/sdk/python) plugin, which lives in the [digital-twins](https://github.com/richard-gyiko/digital-twins) repo alongside the twin servers themselves.
+**Gmail and Drive** support is provided by the `agent-sandbox-twins` plugin in `sdk/agent_sandbox_twins/`.
 
-## Quick Start
+### Engine (Python)
 
-```bash
-# Install engine + Gmail/Drive plugin
-uv sync --all-extras
-pip install agent-sandbox-twins
+- `TwinProvider` protocol and registry
+- DSL v3 spec loading and validation
+- Adapter protocol (`lab.adapter.v1`) for HTTP and command execution
+- Plugin system for registering providers, assertions, and runners
+- Engine-level assertions (workflow state, trace spans)
+- `sandbox_only` isolation by default
 
-# Activate the plugin
-export AGENT_SANDBOX_PLUGIN_MODULES=agent_sandbox_twins
+### Twin Servers (Rust)
 
-# Point at your spec corpus (scenarios, environments, runs)
-export AGENT_SANDBOX_V3_DIR='/path/to/digital-twins/v3'
+- Stateful in-memory replicas of Gmail (v1 API) and Drive (v3 API)
+- Deterministic replay, fault injection, session isolation
+- Control surface: `/control/reset`, `/control/seed`, `/control/snapshot`, `/control/events`
+- Docker images published to GHCR
 
-# Check that everything is wired up
-uv run agent-sandbox doctor --json
-
-# Validate and run
-uv run agent-sandbox run validate my_first_run
-uv run agent-sandbox run execute my_first_run --assert-after
-```
-
-Spec content (environments, scenarios, runs) lives in the [digital-twins](https://github.com/richard-gyiko/digital-twins) repo. This repo is the engine only.
-
-## What's in the Engine
-
-**Orchestration:** generic twin lifecycle via `TwinProvider` plugins — health check, reset, seed, snapshot, event collection.
-
-**Engine-level assertions:**
-- **Workflow** — session state checks, metric equals, event sequence
-- **Trace** — span exists, span attribute equals (requires DuckLens)
-
-**Execution modes:**
-- **Local** — run registered workflow/agent handlers directly in-process
-- **HTTP adapter** — POST a `lab.adapter.v1` payload to a remote service
-- **Command adapter** — spawn a subprocess with the payload on stdin
-
-**Safety:** `sandbox_only` isolation by default (blocks real API access). Explicit opt-in required for `allow_live` mode. Plugin loading governed by allowlist policy.
-
-## What's in the Plugin
-
-The [`agent-sandbox-twins`](https://github.com/richard-gyiko/digital-twins/tree/main/sdk/python) plugin provides:
-
-- Gmail and Drive `TwinProvider` implementations
-- Gmail/Drive assertions (file exists, label applied, op count, filename sequence, etc.)
-- Snapshot reshaping from raw twin state
-
-## Key Concepts
-
-| Concept | What it is |
-|---------|-----------|
-| **Digital twin** | Local mock HTTP server implementing a real service's API |
-| **TwinProvider** | Plugin that teaches the engine how to manage a specific twin type |
-| **Environment** | Configuration for twin endpoints, plugins, and runtime settings |
-| **Scenario** | Test case: seed state + expected assertions |
-| **Run** | Executable spec linking an environment + scenario + target agent |
-| **Adapter** | Bridge to invoke external agents via HTTP or shell command |
+See `twins/README.md` and `twins/ARCHITECTURE.md` for details.
 
 ## CLI Commands
 
@@ -102,16 +91,6 @@ agent-sandbox run validate <run-id>    # Validate spec without executing
 agent-sandbox run execute <run-id>     # Execute a run
 agent-sandbox run execute-tier p0-smoke # Execute all runs in a tier
 agent-sandbox snapshot                 # Snapshot current twin state
-```
-
-## Project Structure
-
-```
-src/agent_sandbox/     CLI, DSL loader, runtime, adapters, assertions, telemetry
-  twin_provider.py     TwinProvider protocol and registry
-  resources/v3/        Packaged JSON schemas and OpenAPI specs
-docs/agent-sandbox/    Architecture, contracts, and safety model
-tests/                 Unit and contract tests
 ```
 
 ## License

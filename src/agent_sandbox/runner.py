@@ -67,14 +67,22 @@ def register_http_protocol(name: str, handler: Any) -> None:
     adapter_runtime.register_http_protocol(name, handler)
 
 
-def register_assertion_param_schema(kind: str, schema_relpath: str) -> None:
+def register_assertion_param_schema(
+    kind: str, schema_relpath: str, *, package: str = "agent_sandbox"
+) -> None:
     """Register JSON schema path for assertion params validation."""
-    registry_runtime.register_assertion_param_schema(kind.strip(), schema_relpath.strip())
+    registry_runtime.register_assertion_param_schema(
+        kind.strip(), schema_relpath.strip(), package=package
+    )
 
 
-def register_action_param_schema(kind: str, schema_relpath: str) -> None:
+def register_action_param_schema(
+    kind: str, schema_relpath: str, *, package: str = "agent_sandbox"
+) -> None:
     """Register JSON schema path for action params validation."""
-    registry_runtime.register_action_param_schema(kind.strip(), schema_relpath.strip())
+    registry_runtime.register_action_param_schema(
+        kind.strip(), schema_relpath.strip(), package=package
+    )
 
 
 def register_http_protocol_config_schema(protocol: str, schema_relpath: str) -> None:
@@ -336,18 +344,16 @@ def _validate_adapter_doc(kind: str, data: dict[str, Any]) -> None:
     validate_schema_doc(f"{kind}.schema.json", data)
 
 
-def _load_schema_by_relpath(schema_relpath: str) -> dict[str, Any]:
-    return load_schema_json(schema_relpath)
-
 
 def _validate_params_with_schema(
     *,
     schema_relpath: str,
     params: dict[str, Any],
     label: str,
+    package: str = "agent_sandbox",
 ) -> None:
     try:
-        schema = _load_schema_by_relpath(schema_relpath)
+        schema = load_schema_json(schema_relpath, package=package)
         Draft202012Validator(schema).validate(params)
     except ValidationError as error:
         message = error.message
@@ -368,7 +374,7 @@ def _validate_scenario_contracts(scenario: dict[str, Any]) -> None:
         if not registry_runtime.has_assertion(kind):
             available = ", ".join(registry_runtime.list_assertion_kinds())
             raise ValueError(f"Unknown scenario assertion kind '{kind}'. Available: {available}")
-        schema_relpath = registry_runtime.get_assertion_param_schema(kind)
+        schema_relpath, schema_package = registry_runtime.get_assertion_param_schema(kind)
         if schema_relpath:
             params = assertion.get("params", {})
             if not isinstance(params, dict):
@@ -379,6 +385,7 @@ def _validate_scenario_contracts(scenario: dict[str, Any]) -> None:
                 schema_relpath=schema_relpath,
                 params=params,
                 label=f"Assertion '{kind}'",
+                package=schema_package,
             )
 
     actions = scenario.get("actions", [])
@@ -389,7 +396,7 @@ def _validate_scenario_contracts(scenario: dict[str, Any]) -> None:
         if not registry_runtime.has_action(kind):
             available = ", ".join(registry_runtime.list_action_kinds())
             raise ValueError(f"Unknown scenario action kind '{kind}'. Available: {available}")
-        schema_relpath = registry_runtime.get_action_param_schema(kind)
+        schema_relpath, schema_package = registry_runtime.get_action_param_schema(kind)
         if schema_relpath:
             params = action.get("params", {})
             if not isinstance(params, dict):
@@ -400,6 +407,7 @@ def _validate_scenario_contracts(scenario: dict[str, Any]) -> None:
                 schema_relpath=schema_relpath,
                 params=params,
                 label=f"Action '{kind}'",
+                package=schema_package,
             )
 
 

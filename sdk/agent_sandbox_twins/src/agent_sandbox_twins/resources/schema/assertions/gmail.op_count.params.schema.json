@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-sandbox.dev/schema/v3/assertions/gmail.op_count.params.schema.json",
+  "type": "object",
+  "required": ["action", "count"],
+  "properties": {
+    "action": { "type": "string", "minLength": 1 },
+    "count": { "type": "integer", "minimum": 0 },
+    "status": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": false
+}

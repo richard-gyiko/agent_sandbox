@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "name": "ci-determinism",
+  "seed": 123,
+  "start_time_unix_ms": 1704067200000,
+  "actors": [
+    { "id": "alice", "label": "Alice Agent" }
+  ],
+  "initial_state": {
+    "files": [
+      {
+        "id": "root",
+        "name": "My Drive",
+        "parent_id": null,
+        "owner_id": "alice",
+        "kind": "Folder"
+      }
+    ]
+  },
+  "timeline": [
+    {
+      "at_ms": 1000,
+      "actor_id": "alice",
+      "action": {
+        "type": "create_folder",
+        "parent_id": "root",
+        "name": "Docs"
+      }
+    },
+    {
+      "at_ms": 2000,
+      "actor_id": "alice",
+      "action": {
+        "type": "create_file",
+        "parent_id": "item_1",
+        "name": "notes.txt"
+      }
+    }
+  ],
+  "faults": [],
+  "assertions": [
+    {
+      "id": "docs-exists",
+      "check": {
+        "type": "item_exists",
+        "item_id": "item_1"
+      }
+    },
+    {
+      "id": "file-exists",
+      "check": {
+        "type": "item_exists",
+        "item_id": "item_2"
+      }
+    }
+  ]
+}

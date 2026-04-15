@@ -1,0 +1,16 @@
+[package]
+name = "twin-{{name}}"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+axum.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+twin-kernel = { path = "../twin-kernel" }
+twin-service = { path = "../twin-service" }
+
+[dev-dependencies]
+tokio.workspace = true
